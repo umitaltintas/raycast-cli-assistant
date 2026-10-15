@@ -1,29 +1,55 @@
 import { environment, getPreferenceValues } from "@raycast/api";
-import { spawn } from "node:child_process";
+import { spawn } from "./spawn";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
+import { findBinary, IS_WINDOWS } from "./platform";
 import { CODEX_PREFIX, codexModelId } from "./provider";
 import { codexCommandStep, codexWebStep } from "./steps";
 import { ModelError, RunOptions, RunResult, systemPrompt } from "./types";
 
+// npm on Windows installs a codex.cmd shim; the native codex.exe it starts
+// lives in a per-platform package (0.162: @openai/codex-win32-x64, nested
+// under @openai/codex for global installs).
+function windowsCandidates(): string[] {
+  const [pkg, triple] =
+    process.arch === "arm64"
+      ? ["win32-arm64", "aarch64-pc-windows-msvc"]
+      : ["win32-x64", "x86_64-pc-windows-msvc"];
+  const npm = join(
+    process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+    "npm",
+    "node_modules",
+    "@openai",
+  );
+  const exe = join("vendor", triple, "bin", "codex.exe");
+  return [
+    join(homedir(), ".local", "bin", "codex.exe"),
+    join(npm, "codex", "node_modules", "@openai", `codex-${pkg}`, exe),
+    join(npm, `codex-${pkg}`, exe),
+    join(npm, "codex", "vendor", triple, "codex", "codex.exe"),
+  ];
+}
+
 // Codex ships inside the ChatGPT app, so that is checked too.
 export function resolveCodexBinary(): string | undefined {
-  const custom = getPreferenceValues<Preferences>().codexPath?.trim();
-  const candidates = custom
-    ? [custom.replace(/^~(?=\/)/, homedir())]
-    : [
-        "/opt/homebrew/bin/codex",
-        "/usr/local/bin/codex",
-        join(homedir(), ".local/bin/codex"),
-        join(homedir(), ".npm-global/bin/codex"),
-        join(homedir(), ".bun/bin/codex"),
-        "/Applications/ChatGPT.app/Contents/Resources/codex",
-        "/Applications/Codex.app/Contents/Resources/codex",
-      ];
-  return candidates.find((p) => existsSync(p));
+  return findBinary(
+    getPreferenceValues<Preferences>().codexPath,
+    IS_WINDOWS
+      ? windowsCandidates()
+      : [
+          "/opt/homebrew/bin/codex",
+          "/usr/local/bin/codex",
+          join(homedir(), ".local/bin/codex"),
+          join(homedir(), ".npm-global/bin/codex"),
+          join(homedir(), ".bun/bin/codex"),
+          "/Applications/ChatGPT.app/Contents/Resources/codex",
+          "/Applications/Codex.app/Contents/Resources/codex",
+        ],
+    "codex",
+  );
 }
 
 function codexEnv(): NodeJS.ProcessEnv {
@@ -133,6 +159,7 @@ const APPROVE_PROMPT = [
   "Shell commands you run are in a read-only sandbox.",
   "If the task needs a command that changes something (writes or deletes files, installs, stops processes), do not try it.",
   "Instead end your reply with a fenced code block tagged `approve` that holds only that one command.",
+  ...(IS_WINDOWS ? ["Write it for PowerShell; that is where it runs."] : []),
   "The user can approve it; you then get its output.",
 ].join(" ");
 
@@ -196,7 +223,7 @@ export function runCodex(opts: RunOptions): Promise<RunResult> {
         ...(opts.sessionId ? [] : ["--ephemeral"]),
       ];
   if (model) args.push("-m", model);
-  // Relative paths and "this folder" then mean the Finder selection.
+  // Relative paths and "this folder" then mean the Finder/Explorer selection.
   if (opts.readDirs?.length) args.push("-C", opts.readDirs[0]);
   args.push("-"); // prompt from stdin
 

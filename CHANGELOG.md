@@ -1,5 +1,15 @@
 # CLI Assistant Changelog
 
+## [Windows] - 2026-10-15
+
+- Runs on Raycast for Windows: finds `claude.exe` and `codex.exe` (known install locations, then `PATH`), opens a console window for login, and uses Ctrl where macOS uses ⌘
+- Ask About Finder Selection is now Ask About Selected Files and reads the File Explorer selection on Windows
+- Claude Code gets its PowerShell tool next to Bash (Git Bash). Codex's approved commands run in PowerShell 7 if installed, else Windows PowerShell
+- The CLIs are started from a worker thread on Windows. Starting a process there can block for seconds while security software checks it, which froze Chat, let a queued Enter stop the request and made Raycast unload the command. Stopping a request also ends the CLI's child processes
+- Chat ignores a second Enter while a question is being sent
+- Raycast's BCP 47 locale (`LC_ALL=en-US-u-…`) is dropped for the CLIs, so Git Bash no longer warns `setlocale: LC_ALL: cannot change locale` on every command
+- `install.ps1` installs or updates from a clone or the latest release, like `install.sh`
+
 ## [Show What the Model Does] - 2026-10-14
 
 - While answering, Ask AI and Chat show each step live (web searches, pages opened, files read, commands run) instead of only "Thinking…"; the steps stay above the answer, so commands that ran without asking are visible too

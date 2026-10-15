@@ -1,4 +1,5 @@
 import { homedir } from "node:os";
+import { IS_WINDOWS } from "./platform";
 
 // What the model did while answering (searches, files read, commands run),
 // shown live and kept above the answer. Read-only commands can run without
@@ -9,9 +10,12 @@ const clip = (s: string, n = 90) =>
 const code = (s: string) =>
   `\`${clip(s.replace(/\s+/g, " ")).replace(/`/g, "'")}\``;
 
+// Windows paths can come with either slash and any case.
 function shortPath(p: string): string {
   const home = homedir();
-  return p.startsWith(home) ? `~${p.slice(home.length)}` : p;
+  const norm = (s: string) =>
+    IS_WINDOWS ? s.replace(/\//g, "\\").toLowerCase() : s;
+  return norm(p).startsWith(norm(home)) ? `~${p.slice(home.length)}` : p;
 }
 
 function webStep(queryOrUrl: string): string {
@@ -26,6 +30,7 @@ export const SEARCHING_STEP = "🔎 Searching the web…";
 export function claudeStep(name: string, input: any): string | undefined {
   switch (name) {
     case "Bash":
+    case "PowerShell":
       return input?.command ? `💻 Ran ${code(input.command)}` : undefined;
     case "Read":
       return input?.file_path
@@ -46,14 +51,20 @@ export function claudeStep(name: string, input: any): string | undefined {
   }
 }
 
-// Codex reports commands wrapped as /bin/zsh -lc '<command>' (or "<command>").
+// Codex reports commands wrapped as /bin/zsh -lc '<command>' (or "<command>");
+// on Windows as <path>\pwsh.exe [-NoProfile] -Command '<command>', the path
+// quoted when it has spaces.
+const SHELL_WRAPPER = IS_WINDOWS
+  ? /^(['"]?)[^'"]*?(?:pwsh|powershell|bash)(?:\.exe)?\1 (?:-\w+ )*?-(?:Command|l?c) (?<q>['"])(?<cmd>[\s\S]*)\k<q>$/i
+  : /^\S*\/(?:ba|z)?sh -l?c (?<q>['"])(?<cmd>[\s\S]*)\k<q>$/;
+
 export function codexCommandStep(command: string): string {
-  const m = command.match(/^\S*\/(?:ba|z)?sh -l?c (['"])([\s\S]*)\1$/);
+  const m = command.match(SHELL_WRAPPER)?.groups;
   const inner = !m
     ? command
-    : m[1] === "'"
-      ? m[2].replace(/'\\''/g, "'")
-      : m[2].replace(/\\(["\\$`])/g, "$1");
+    : m.q === "'"
+      ? m.cmd.replace(/'\\''/g, "'")
+      : m.cmd.replace(/\\(["\\$`])/g, "$1");
   return `💻 Ran ${code(inner)}`;
 }
 

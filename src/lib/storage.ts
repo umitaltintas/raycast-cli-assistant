@@ -2,6 +2,7 @@ import { environment, LocalStorage } from "@raycast/api";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { RequestOptions } from "./options";
+import { Shell } from "./platform";
 import { RateLimit } from "./types";
 
 export interface Message {
@@ -14,6 +15,7 @@ export interface Message {
   model?: string;
   // Shell commands the model asked to run, until approved or dismissed.
   commands?: string[];
+  shells?: Record<string, Shell>;
   steps?: string[];
   durationMs?: number;
 }

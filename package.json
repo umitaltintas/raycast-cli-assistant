@@ -10,6 +10,10 @@
     "Developer Tools"
   ],
   "license": "MIT",
+  "platforms": [
+    "macOS",
+    "Windows"
+  ],
   "commands": [
     {
       "name": "ask",
@@ -57,9 +61,9 @@
     },
     {
       "name": "ask-files",
-      "title": "Ask About Finder Selection",
+      "title": "Ask About Selected Files",
       "subtitle": "CLI Assistant",
-      "description": "Ask a question about the files or folders selected in Finder. The model can read them, nothing else.",
+      "description": "Ask a question about the files or folders selected in Finder or File Explorer. The model can read them, nothing else.",
       "mode": "view",
       "arguments": [
         {
@@ -124,7 +128,7 @@
     {
       "name": "model",
       "title": "Default Model",
-      "description": "Used until you pick a model in the extension. Claude aliases always resolve to the newest version. The full lists from the Claude Code and Codex CLIs are in the model menus: Chat, Translate, and ⌘⇧R on answers.",
+      "description": "Used until you pick a model in the extension. Claude aliases always resolve to the newest version. The full lists from the Claude Code and Codex CLIs are in the model menus: Chat, Translate, and ⌘⇧R (Ctrl+Shift+R on Windows) on answers.",
       "type": "dropdown",
       "required": false,
       "default": "haiku",
@@ -375,7 +379,7 @@
       "name": "webSearch",
       "title": "Web Search",
       "label": "Search the web in Ask AI and Chat",
-      "description": "Default for new chats and Ask AI; toggle it in a chat with ⌘⇧W. Answers take longer (Claude ~20 s, Codex ~13 s).",
+      "description": "Default for new chats and Ask AI; toggle it in a chat with ⌘⇧W (Ctrl+Shift+W on Windows). Answers take longer (Claude ~20 s, Codex ~13 s).",
       "type": "checkbox",
       "required": false,
       "default": false
@@ -384,7 +388,7 @@
       "name": "chatTools",
       "title": "Tools",
       "label": "Let Ask AI and Chat read files and propose shell commands",
-      "description": "Default for Ask AI and new chats; toggle it with ⌘⇧T. Files are only read; a shell command that changes something is shown first and runs only after you approve it.",
+      "description": "Default for Ask AI and new chats; toggle it with ⌘⇧T (Ctrl+Shift+T on Windows). Files are only read; a shell command that changes something is shown first and runs only after you approve it.",
       "type": "checkbox",
       "required": false,
       "default": false
@@ -392,7 +396,7 @@
     {
       "name": "effort",
       "title": "Reasoning Effort",
-      "description": "How hard the model thinks. Higher is slower; short questions rarely need it. Change it in a chat with ⌘⇧E.",
+      "description": "How hard the model thinks. Higher is slower; short questions rarely need it. Change it in a chat with ⌘⇧E (Ctrl+Shift+E on Windows).",
       "type": "dropdown",
       "required": false,
       "default": "",
@@ -434,14 +438,14 @@
     {
       "name": "claudePath",
       "title": "Claude CLI Path",
-      "description": "Leave empty to try ~/.local/bin, /opt/homebrew/bin and /usr/local/bin.",
+      "description": "Leave empty to try ~/.local/bin, /opt/homebrew/bin and /usr/local/bin (on Windows: ~/.local/bin/claude.exe, then PATH).",
       "type": "textfield",
       "required": false
     },
     {
       "name": "codexPath",
       "title": "Codex CLI Path",
-      "description": "Leave empty to try Homebrew, ~/.local/bin, npm and the copy bundled with the ChatGPT app.",
+      "description": "Leave empty to try Homebrew, ~/.local/bin, npm and the copy bundled with the ChatGPT app (on Windows: the codex.exe inside the global npm package, then PATH).",
       "type": "textfield",
       "required": false
     },

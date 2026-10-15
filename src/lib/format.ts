@@ -1,3 +1,4 @@
+import { IS_WINDOWS } from "./platform";
 import { ModelError, RateLimit } from "./types";
 
 function clock(epochSeconds: number): string {
@@ -47,6 +48,11 @@ export function errorMarkdown(error: ModelError): string {
   const codex = error.provider === "codex";
   switch (error.kind) {
     case "not-installed":
+      if (IS_WINDOWS) {
+        return codex
+          ? "## Codex CLI not found\n\nInstall it: `npm i -g @openai/codex`\n\nIf it lives elsewhere, set **Codex CLI Path** (the `codex.exe`, not `codex.cmd`) in the extension preferences."
+          : "## Claude Code CLI not found\n\nInstall it in PowerShell: `irm https://claude.ai/install.ps1 | iex`\n\nIf it lives elsewhere, set **Claude CLI Path** (the `claude.exe`) in the extension preferences.";
+      }
       return codex
         ? "## Codex CLI not found\n\nInstall it: `brew install codex` (or `npm i -g @openai/codex`). The ChatGPT app also ships one.\n\nIf it lives elsewhere, set **Codex CLI Path** in the extension preferences."
         : "## Claude Code CLI not found\n\nInstall it: `curl -fsSL https://claude.ai/install.sh | bash`\n\nIf it lives elsewhere, set **Claude CLI Path** in the extension preferences.";

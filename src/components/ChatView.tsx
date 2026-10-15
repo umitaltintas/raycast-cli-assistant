@@ -21,6 +21,7 @@ import {
 import { withMissingContext } from "../lib/chatContext";
 import { useModels } from "../lib/modelCatalog";
 import { defaultOptions, optionBadges, RequestOptions } from "../lib/options";
+import { MOD_KEY, Shell, shellLang } from "../lib/platform";
 import { PROVIDER_NAMES } from "../lib/provider";
 import { commandResultPrompt, runApprovedCommand } from "../lib/shell";
 import {
@@ -59,6 +60,9 @@ export function ChatView({
   const sentFirst = useRef(false);
   // If "New Chat" is opened mid-request, the late answer must not land in the new chat.
   const activeId = useRef(conversation.id);
+  // isLoading only changes on the next render; a second Enter before it
+  // would start another run, which aborts the first ("Stopped.").
+  const sending = useRef(false);
 
   // `prompt` replaces the question for the model (approved command results);
   // `from` is the conversation to continue when state isn't updated yet.
@@ -68,7 +72,8 @@ export function ChatView({
     from: Conversation = conversation,
   ) => {
     const q = question.trim();
-    if (!q || stream.isLoading) return;
+    if (!q || stream.isLoading || sending.current) return;
+    sending.current = true;
     const msg: Message = {
       id: crypto.randomUUID(),
       question: q,
@@ -86,12 +91,14 @@ export function ChatView({
     setSelectedId(msg.id);
     setPendingId(msg.id);
 
-    const result = await stream.run({
-      prompt: withMissingContext(from.messages, from.model, prompt ?? q),
-      model: from.model,
-      sessionId: from.sessionId,
-      ...from.options,
-    });
+    const result = await stream
+      .run({
+        prompt: withMissingContext(from.messages, from.model, prompt ?? q),
+        model: from.model,
+        sessionId: from.sessionId,
+        ...from.options,
+      })
+      .finally(() => (sending.current = false));
     const finished: Message = {
       ...msg,
       answer: result.text,
@@ -100,6 +107,7 @@ export function ChatView({
           ? errorMarkdown(result.error!)
           : undefined,
       commands: result.commands,
+      shells: result.shells,
       steps: result.steps,
       durationMs: result.durationMs,
     };
@@ -165,9 +173,14 @@ export function ChatView({
       title: "Running command…",
       message: command,
     });
-    const result = await runApprovedCommand(command);
+    const shell = m.shells?.[command];
+    const result = await runApprovedCommand(command, shell);
     toast.hide();
-    await send(`$ ${command}`, commandResultPrompt(command, result), cleared);
+    await send(
+      `$ ${command}`,
+      commandResultPrompt(command, result, shell),
+      cleared,
+    );
   };
 
   const dismissCommands = (m: Message) => {
@@ -182,7 +195,7 @@ export function ChatView({
     if (m.id === pendingId) {
       return `${question}${stepsMarkdown(stream.steps)}${stream.text || `_${modelLabel(m.model ?? conversation.model)} is thinking…_`}`;
     }
-    return `${question}${stepsMarkdown(m.steps)}${m.error ?? m.answer}${commandsMarkdown(m.commands)}${footerMarkdown(m.model, modelLabel, m.durationMs)}`;
+    return `${question}${stepsMarkdown(m.steps)}${m.error ?? m.answer}${commandsMarkdown(m.commands, m.shells)}${footerMarkdown(m.model, modelLabel, m.durationMs)}`;
   };
 
   const messages = [...conversation.messages].reverse();
@@ -383,14 +396,19 @@ function withoutCommands(c: Conversation, messageId: string): Conversation {
   return {
     ...c,
     messages: c.messages.map((m) =>
-      m.id === messageId ? { ...m, commands: undefined } : m,
+      m.id === messageId ? { ...m, commands: undefined, shells: undefined } : m,
     ),
   };
 }
 
-export function commandsMarkdown(commands: string[] | undefined): string {
+export function commandsMarkdown(
+  commands: string[] | undefined,
+  shells?: Record<string, Shell>,
+): string {
   if (!commands?.length) return "";
-  const blocks = commands.map((c) => `\`\`\`sh\n${c}\n\`\`\``).join("\n\n");
+  const blocks = commands
+    .map((c) => `\`\`\`${shellLang(shells?.[c])}\n${c}\n\`\`\``)
+    .join("\n\n");
   const verb = commands.length === 1 ? "this command" : "these commands";
-  return `\n\n---\n\n**Wants to run ${verb}** (runs only if you approve it; ↵ or ⌘K):\n\n${blocks}`;
+  return `\n\n---\n\n**Wants to run ${verb}** (runs only if you approve it; ↵ or ${MOD_KEY}K):\n\n${blocks}`;
 }

@@ -1,0 +1,3 @@
+# Prettier (and the Raycast lint) expect LF; keep it on Windows checkouts too.
+* text=auto eol=lf
+*.png binary

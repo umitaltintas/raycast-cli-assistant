@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn } from "./spawn";
 import { createInterface } from "node:readline";
 import { useCallback, useEffect, useState } from "react";
 import { childEnv, resolveClaudeBinary, workDir } from "./claude";

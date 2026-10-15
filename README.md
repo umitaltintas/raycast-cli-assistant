@@ -4,13 +4,13 @@
 
 **Raycast AI on the Claude or ChatGPT plan you already pay for.**
 
-Claude and ChatGPT plans include a coding CLI: Claude Code and Codex. This Raycast extension runs your requests through whichever one is installed and signed in on your Mac, so you get the everyday Raycast AI features without a Raycast Pro subscription, an API key or per-token billing.
+Claude and ChatGPT plans include a coding CLI: Claude Code and Codex. This Raycast extension runs your requests through whichever one is installed and signed in on your Mac or Windows PC ([Windows](#windows)), so you get the everyday Raycast AI features without a Raycast Pro subscription, an API key or per-token billing.
 
 - **Ask AI** from root search, and **Chat** with follow-ups and history
 - **Fix Spelling and Grammar**, **Improve Writing**, **Make Shorter**: rewrite the selection in place
 - **Translate** as you type, or **Translate and Replace** the selection with one hotkey
 - **Summarize** and **Explain** the selection
-- **Ask About Finder Selection**: questions about files and folders (PDFs, logs, code), read-only
+- **Ask About Selected Files**: questions about files and folders (PDFs, logs, code), read-only
 - Optional **web search**, **reasoning effort** and **tools** (read files, run shell commands after your approval), switchable mid-chat
 - Any model your plan offers (Haiku, Sonnet, Opus, GPT-5.6…), switchable mid-chat, even between Claude and Codex
 
@@ -69,6 +69,35 @@ Press <kbd>⌘</kbd><kbd>Space</kbd>, type "Ask AI", ask a question and the answ
 
   - [Codex](https://github.com/openai/codex), signed in with a ChatGPT plan: `brew install codex`, then `codex login`. The ChatGPT app also ships a copy of Codex, which is found automatically.
 
+## Windows
+
+In PowerShell, without a clone (downloads the latest release, no Node needed):
+
+```powershell
+irm https://raw.githubusercontent.com/umitaltintas/raycast-cli-assistant/main/install.ps1 | iex
+```
+
+Or from a clone, which builds from source (needs Node 22.22.2 or newer):
+
+```powershell
+git clone https://github.com/umitaltintas/raycast-cli-assistant.git
+cd raycast-cli-assistant
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+`install.ps1` does what `install.sh` does: it checks Raycast, Claude Code, Codex and Git Bash, puts the extension into `%USERPROFILE%\.config\raycast\extensions\claude-cli` and registers it with Raycast the way `ray develop` does, but leaves no watcher running. A `ray develop` that is still running is stopped first, since it would overwrite the install on its next rebuild. **Run it again to update**; chats and settings are kept. `npm run dev` still works for development.
+
+Requirements: Raycast for Windows, and Claude Code (`irm https://claude.ai/install.ps1 | iex`, then `claude` → `/login`) or Codex (`npm i -g @openai/codex`, then `codex login`).
+
+What differs from macOS:
+
+- <kbd>Ctrl</kbd> replaces <kbd>⌘</kbd> in every shortcut below (<kbd>Ctrl</kbd><kbd>⇧</kbd><kbd>T</kbd> for Tools, <kbd>Ctrl</kbd><kbd>.</kbd> to stop…).
+- **Ask About Selected Files** reads the File Explorer selection.
+- **Tools:** Claude Code gets both its Bash tool (Git Bash) and its PowerShell tool. An approved command runs in the shell it was written for: Bash commands in the Git Bash Claude Code uses (`CLAUDE_CODE_GIT_BASH_PATH`, else the one next to `git.exe`), PowerShell commands in PowerShell 7 if installed, else Windows PowerShell. Codex's own shell on Windows is PowerShell, so its `approve` commands run there.
+- **Login:** *Open Terminal for Login* opens a console window with `claude /login` or `codex login`.
+- The CLIs are found in `~\.local\bin\claude.exe`, the global npm package for `codex.exe`, then `PATH`. npm's `.cmd` shims are skipped: they can't be started without a shell, which would mangle the arguments.
+- The Spotlight app is macOS only.
+
 ## Commands
 
 | Command | What it does |
@@ -77,7 +106,7 @@ Press <kbd>⌘</kbd><kbd>Space</kbd>, type "Ask AI", ask a question and the answ
 | **Chat** | A chat with follow-up questions. |
 | **Chat History** | Open or delete previous chats. |
 | **Ask About Selection** | Ask a question about the selected text. |
-| **Ask About Finder Selection** | Ask about the files or folders selected in Finder. The model can read them and nothing else. |
+| **Ask About Selected Files** | Ask about the files or folders selected in Finder (File Explorer on Windows). The model can read them and nothing else. |
 | **Fix Spelling and Grammar** · **Improve Writing** · **Make Shorter** | Rewrite the selected text and paste the result over it. |
 | **Translate** | Translates as you type; selected text is filled in. The target language is remembered. |
 | **Translate and Replace** | Translates the selected text without opening a window and pastes it over the selection. |

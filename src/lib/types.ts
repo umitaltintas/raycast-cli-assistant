@@ -1,5 +1,6 @@
 import { getPreferenceValues } from "@raycast/api";
 import { RequestOptions } from "./options";
+import { Shell } from "./platform";
 import { Provider } from "./provider";
 
 export interface RateLimit {
@@ -27,6 +28,8 @@ export interface RunResult {
   durationMs?: number;
   // Shell commands the model wants to run; they wait for the user's approval.
   commands?: string[];
+  // The shell each command is for; unset means the platform default.
+  shells?: Record<string, Shell>;
   // What the model did on the way (see steps.ts).
   steps?: string[];
 }

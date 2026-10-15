@@ -1,9 +1,10 @@
 import { environment, getPreferenceValues } from "@raycast/api";
-import { spawn } from "node:child_process";
+import { spawn } from "./spawn";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
+import { findBinary, IS_WINDOWS, Shell, withPosixLocale } from "./platform";
 import { currentModel } from "./models";
 import { claudeStep } from "./steps";
 import {
@@ -14,17 +15,18 @@ import {
   systemPrompt,
 } from "./types";
 
-// Raycast's Node process does not inherit the shell PATH; absolute paths only.
 export function resolveClaudeBinary(): string | undefined {
-  const custom = getPreferenceValues<Preferences>().claudePath?.trim();
-  const candidates = custom
-    ? [custom.replace(/^~(?=\/)/, homedir())]
-    : [
-        join(homedir(), ".local/bin/claude"),
-        "/opt/homebrew/bin/claude",
-        "/usr/local/bin/claude",
-      ];
-  return candidates.find((p) => existsSync(p));
+  return findBinary(
+    getPreferenceValues<Preferences>().claudePath,
+    IS_WINDOWS
+      ? [join(homedir(), ".local", "bin", "claude.exe")]
+      : [
+          join(homedir(), ".local/bin/claude"),
+          "/opt/homebrew/bin/claude",
+          "/usr/local/bin/claude",
+        ],
+    "claude",
+  );
 }
 
 // --setting-sources "" also skips the user's settings.json, so its proxy
@@ -45,7 +47,11 @@ function proxyEnv(): Record<string, string> {
 }
 
 export function childEnv(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env, ...proxyEnv() };
+  // The locale also reaches Claude Code's own Bash tool.
+  const env: NodeJS.ProcessEnv = {
+    ...withPosixLocale(process.env),
+    ...proxyEnv(),
+  };
   // Raycast extension processes have no USER/LOGNAME. Claude Code looks up its
   // Keychain login with them and reports "Not logged in" without them
   // (verified 2026-10-11).
@@ -104,16 +110,25 @@ function parseRateLimit(
   return { fiveHour: windows.five_hour, sevenDay: windows.seven_day };
 }
 
+// On Windows Claude Code has a PowerShell tool next to Bash (Git Bash). It
+// behaves the same in -p mode: read-only commands run, others are denied
+// (verified with Claude Code 2.1.299, 2026-10-14).
+const SHELL_TOOLS: Record<string, Shell> = IS_WINDOWS
+  ? { Bash: "bash", PowerShell: "powershell" }
+  : { Bash: "bash" };
+
 // Web search ~20 s instead of ~2 s, file reading ~2.5 s (measured
-// 2026-10-14). Bash is offered but never pre-approved: in -p mode a call to it
-// is denied and comes back in permission_denials, so the extension can ask the
-// user and run the exact command itself.
+// 2026-10-14). The shell is offered but never pre-approved: in -p mode a call
+// to it is denied and comes back in permission_denials, so the extension can
+// ask the user and run the exact command itself.
 function toolArgs(opts: RunOptions): string[] {
   const allowed: string[] = [];
   if (opts.webSearch) allowed.push("WebSearch", "WebFetch");
   const dirs = opts.tools ? [homedir()] : (opts.readDirs ?? []);
   if (dirs.length) allowed.push("Read", "Glob", "Grep");
-  const tools = opts.tools ? [...allowed, "Bash"] : allowed;
+  const tools = opts.tools
+    ? [...allowed, ...Object.keys(SHELL_TOOLS)]
+    : allowed;
   const args = ["--tools", tools.join(",")];
   if (allowed.length) args.push("--allowedTools", allowed.join(","));
   for (const d of dirs) args.push("--add-dir", d);
@@ -189,6 +204,7 @@ export function runClaude(opts: RunOptions): Promise<RunResult> {
     let durationMs: number | undefined;
     let rateLimit: RateLimit | undefined;
     let commands: string[] = [];
+    let shells: Record<string, Shell> = {};
     const steps = new Map<string, string>();
     let stderr = "";
     let cancelled = false;
@@ -240,6 +256,7 @@ export function runClaude(opts: RunOptions): Promise<RunResult> {
         resultIsError = Boolean(event.is_error) || event.subtype !== "success";
         durationMs = event.duration_ms;
         commands = deniedCommands(event.permission_denials);
+        shells = deniedShells(event.permission_denials);
         // Denied commands didn't run; they come back as commands to approve.
         for (const d of event.permission_denials ?? [])
           steps.delete(d?.tool_use_id);
@@ -293,6 +310,7 @@ export function runClaude(opts: RunOptions): Promise<RunResult> {
         steps: steps.size ? [...steps.values()] : undefined,
         durationMs,
         commands: commands.length ? commands : undefined,
+        shells: commands.length ? shells : undefined,
       });
     });
   });
@@ -301,8 +319,19 @@ export function runClaude(opts: RunOptions): Promise<RunResult> {
 function deniedCommands(denials: unknown): string[] {
   if (!Array.isArray(denials)) return [];
   const commands = denials
-    .filter((d) => d?.tool_name === "Bash")
+    .filter((d) => Object.hasOwn(SHELL_TOOLS, d?.tool_name))
     .map((d) => d?.tool_input?.command)
     .filter((c): c is string => typeof c === "string" && c.trim() !== "");
   return [...new Set(commands)];
+}
+
+// Which shell each denied command was written for.
+function deniedShells(denials: unknown): Record<string, Shell> {
+  if (!Array.isArray(denials)) return {};
+  return Object.fromEntries(
+    denials
+      .filter((d) => Object.hasOwn(SHELL_TOOLS, d?.tool_name))
+      .filter((d) => typeof d?.tool_input?.command === "string")
+      .map((d) => [d.tool_input.command, SHELL_TOOLS[d.tool_name]]),
+  );
 }

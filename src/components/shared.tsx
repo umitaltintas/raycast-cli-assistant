@@ -9,6 +9,8 @@ import { spawn } from "node:child_process";
 import { ModelError } from "../lib/types";
 import { groupByProvider, ModelOption, sameModel } from "../lib/models";
 import { EFFORTS, RequestOptions } from "../lib/options";
+import { IS_WINDOWS } from "../lib/platform";
+import { resolveClaudeBinary } from "../lib/claude";
 import { resolveCodexBinary } from "../lib/codex";
 import { Provider, PROVIDER_NAMES } from "../lib/provider";
 
@@ -21,6 +23,21 @@ function loginCommand(provider: Provider | undefined): string {
 }
 
 function openLoginInTerminal(provider: Provider | undefined) {
+  if (IS_WINDOWS) {
+    const bin =
+      (provider === "codex" ? resolveCodexBinary() : resolveClaudeBinary()) ??
+      (provider === "codex" ? "codex" : "claude");
+    const command = `"${bin}" ${provider === "codex" ? "login" : "/login"}`;
+    // start opens a new console window; /k keeps it open after the login.
+    // /s with outer quotes stops cmd from stripping the quotes inside.
+    spawn("cmd.exe", ["/d", "/s", "/c", `"start "" cmd.exe /k ${command}"`], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+      windowsVerbatimArguments: true,
+    }).unref();
+    return;
+  }
   const script = `tell application "Terminal" to do script ${JSON.stringify(loginCommand(provider))}`;
   spawn(
     "osascript",
@@ -54,14 +71,22 @@ export function ErrorActions({ error }: { error: ModelError }) {
   return null;
 }
 
-export const STOP_SHORTCUT: Keyboard.Shortcut = {
-  modifiers: ["cmd"],
-  key: ".",
-};
-export const MODEL_SHORTCUT: Keyboard.Shortcut = {
-  modifiers: ["cmd", "shift"],
-  key: "r",
-};
+// ⌘ on macOS is Ctrl on Windows.
+export function shortcut(
+  modifiers: Keyboard.KeyModifier[],
+  key: Keyboard.KeyEquivalent,
+): Keyboard.Shortcut {
+  return {
+    macOS: { modifiers, key },
+    Windows: {
+      modifiers: modifiers.map((m) => (m === "cmd" ? "ctrl" : m)),
+      key,
+    },
+  };
+}
+
+export const STOP_SHORTCUT = shortcut(["cmd"], ".");
+export const MODEL_SHORTCUT = shortcut(["cmd", "shift"], "r");
 
 // The list comes from the CLI (useModels); the chosen model persists.
 export function ModelSubmenu(props: {
@@ -110,18 +135,9 @@ export function ModelSubmenu(props: {
   );
 }
 
-export const WEB_SEARCH_SHORTCUT: Keyboard.Shortcut = {
-  modifiers: ["cmd", "shift"],
-  key: "w",
-};
-export const TOOLS_SHORTCUT: Keyboard.Shortcut = {
-  modifiers: ["cmd", "shift"],
-  key: "t",
-};
-export const EFFORT_SHORTCUT: Keyboard.Shortcut = {
-  modifiers: ["cmd", "shift"],
-  key: "e",
-};
+export const WEB_SEARCH_SHORTCUT = shortcut(["cmd", "shift"], "w");
+export const TOOLS_SHORTCUT = shortcut(["cmd", "shift"], "t");
+export const EFFORT_SHORTCUT = shortcut(["cmd", "shift"], "e");
 
 // Web search, tools and effort for the current chat or answer.
 export function OptionActions(props: {

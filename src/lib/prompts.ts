@@ -1,4 +1,5 @@
 import { primaryLanguage, TranslationDirection } from "./languages";
+import { FILE_MANAGER } from "./platform";
 
 // Rewrite commands paste the result straight over the selection, so the model
 // must return only the text: no explanation, no quotes.
@@ -66,5 +67,5 @@ export function askAboutPrompt(text: string, question: string): string {
 // The model reads the files itself (read-only tools), so only paths are sent.
 export function askAboutFilesPrompt(paths: string[], question: string): string {
   const list = paths.map((p) => `- ${p}`).join("\n");
-  return `${question}\n\n${answerIn()} Read the files you need; they were selected in Finder:\n\n${list}`;
+  return `${question}\n\n${answerIn()} Read the files you need; they were selected in ${FILE_MANAGER}:\n\n${list}`;
 }

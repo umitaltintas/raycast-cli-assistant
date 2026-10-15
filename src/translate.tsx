@@ -7,7 +7,7 @@ import {
   LocalStorage,
 } from "@raycast/api";
 import { useEffect, useRef, useState } from "react";
-import { ModelSubmenu } from "./components/shared";
+import { ModelSubmenu, shortcut } from "./components/shared";
 import { errorMarkdown } from "./lib/format";
 import {
   AUTO,
@@ -176,7 +176,7 @@ export default function Command() {
                     <Action
                       title="Translate Back"
                       icon={Icon.Switch}
-                      shortcut={{ modifiers: ["cmd"], key: "t" }}
+                      shortcut={shortcut(["cmd"], "t")}
                       onAction={() => setText(translation)}
                     />
                   ) : null}

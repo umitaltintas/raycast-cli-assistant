@@ -4,6 +4,7 @@ import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
 import { AnswerView } from "./components/AnswerView";
 import { defaultOptions } from "./lib/options";
+import { FILE_MANAGER, IS_WINDOWS } from "./lib/platform";
 import { askAboutFilesPrompt } from "./lib/prompts";
 
 interface Selection {
@@ -18,7 +19,7 @@ async function readFinderSelection(): Promise<Selection> {
   try {
     paths = (await getSelectedFinderItems()).map((i) => i.path);
   } catch {
-    // Finder is not frontmost or nothing is selected
+    // Finder/File Explorer is not frontmost or nothing is selected
   }
   const dirs = paths.map((p) => {
     try {
@@ -43,9 +44,9 @@ export default function Command(
     return (
       <List>
         <List.EmptyView
-          icon={Icon.Finder}
-          title="Nothing Selected in Finder"
-          description="Select files or folders in Finder, then run this command."
+          icon={IS_WINDOWS ? Icon.HardDrive : Icon.Finder}
+          title={`Nothing Selected in ${FILE_MANAGER}`}
+          description={`Select files or folders in ${FILE_MANAGER}, then run this command.`}
         />
       </List>
     );
@@ -59,7 +60,7 @@ export default function Command(
   const { effort, webSearch } = defaultOptions();
   return (
     <AnswerView
-      navigationTitle="About Finder Selection"
+      navigationTitle={`About ${FILE_MANAGER} Selection`}
       prompt={askAboutFilesPrompt(selection.paths, question)}
       question={`${question} (${shown})`}
       options={{ effort, webSearch, readDirs: selection.dirs }}

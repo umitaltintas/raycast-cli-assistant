@@ -91,6 +91,7 @@ export function AnswerView(props: AnswerViewProps) {
       steps: stream.steps,
       durationMs: stream.durationMs,
       commands: command ? undefined : stream.commands,
+      shells: stream.shells,
     });
     await saveConversation(c);
     push(<ChatView initial={c} autoRun={command} />);
@@ -101,7 +102,7 @@ export function AnswerView(props: AnswerViewProps) {
       ? errorMarkdown(stream.error)
       : stream.text || `_${modelLabel(model)} is thinking…_`;
   const commands = stream.isLoading ? undefined : stream.commands;
-  const markdown = `**${escape(props.question)}**\n\n---\n\n${stepsMarkdown(stream.steps)}${commands?.length && !stream.text ? "" : body}${commandsMarkdown(commands)}`;
+  const markdown = `**${escape(props.question)}**\n\n---\n\n${stepsMarkdown(stream.steps)}${commands?.length && !stream.text ? "" : body}${commandsMarkdown(commands, stream.shells)}`;
   const done = !stream.isLoading && !stream.error && stream.text.length > 0;
 
   return (

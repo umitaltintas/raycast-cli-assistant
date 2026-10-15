@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { runModel } from "./run";
+import { Shell } from "./platform";
 import { ModelError, RateLimit, RunOptions, RunResult } from "./types";
 import { saveRateLimit } from "./storage";
 
@@ -14,6 +15,7 @@ export interface StreamState {
   rateLimit?: RateLimit;
   durationMs?: number;
   commands?: string[];
+  shells?: Record<string, Shell>;
   steps?: string[];
 }
 
@@ -66,6 +68,7 @@ export function useModelStream() {
           rateLimit: result.rateLimit,
           durationMs: result.durationMs,
           commands: result.commands,
+          shells: result.shells,
           steps: result.steps,
         });
       }
