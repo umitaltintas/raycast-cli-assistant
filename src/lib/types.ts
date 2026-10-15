@@ -18,6 +18,29 @@ export interface RunOptions extends RequestOptions {
   signal?: AbortSignal;
   onText?: (fullText: string) => void;
   onSteps?: (steps: string[]) => void;
+  // Claude with tools: a shell command waits mid-turn until this resolves.
+  onPermission?: (request: PermissionRequest) => Promise<PermissionAnswer>;
+}
+
+// Run it, or don't; a note with "don't" tells Claude what to do instead.
+export interface PermissionAnswer {
+  allow: boolean;
+  note?: string;
+}
+
+// A shell command waiting for the user's answer while the model works.
+export interface PermissionRequest {
+  // The tool call's id.
+  id: string;
+  command: string;
+  shell: Shell;
+  // The tool call's own one-line summary.
+  description?: string;
+}
+
+export interface DeniedCommand {
+  command: string;
+  shell: Shell;
 }
 
 export interface RunResult {
@@ -26,10 +49,12 @@ export interface RunResult {
   error?: ModelError;
   rateLimit?: RateLimit;
   durationMs?: number;
-  // Shell commands the model wants to run; they wait for the user's approval.
+  // Codex: shell commands from its `approve` block; they wait for the user's
+  // approval and then run in the extension (see shell.ts).
   commands?: string[];
-  // The shell each command is for; unset means the platform default.
-  shells?: Record<string, Shell>;
+  // Claude: shell commands Claude Code refused without asking the user (e.g.
+  // auto mode). Only listed: the extension never runs Claude's commands.
+  denied?: DeniedCommand[];
   // What the model did on the way (see steps.ts).
   steps?: string[];
 }

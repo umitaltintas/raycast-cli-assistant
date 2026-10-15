@@ -1,5 +1,18 @@
 # CLI Assistant Changelog
 
+## [Pre-Started Chat] - 2026-10-15
+
+- Chat starts Claude Code before you send (when it opens and after each answer, with the chat's options), so its startup happens while you type: the first text came ~1 s after sending instead of ~10 s on a Windows laptop. Leaving the chat ends it
+
+## [Commands Approved Mid-Turn] - 2026-10-15
+
+- With Tools, Claude Code runs in auto mode: commands its safety check judges in line with your request run without asking, including ones you explicitly ask for
+- A command that needs approval pauses the answer until you answer: ↵ runs it (Claude Code runs it itself and goes on with its output), ⌘↵ declines it; several come one after another. Before, `-p` refused such commands on its own, the model retried them in other forms (3–6 to approve on Windows), and approving ran the command in the extension and restarted Claude
+- In Chat, a note typed before ⌘↵ (_Don't Run, Tell Claude_) goes to Claude as the answer, so it goes on in the same turn ("move it to the trash instead")
+- The extension never runs Claude's commands. One that Claude Code refuses without asking is listed after the answer as _Not run_, with no Run action; tell Claude to go ahead to run it. Claude commands saved in older chats load as _Not run_. Codex's `approve` commands work as before
+- A shell command shows as a step once it has run, so refused ones no longer show as "Ran"
+- Claude is told to use your home folder when no folder is named: its shell starts in the extension's hidden sessions folder, where `touch notes.txt` landed
+
 ## [Windows] - 2026-10-15
 
 - Runs on Raycast for Windows: finds `claude.exe` and `codex.exe` (known install locations, then `PATH`), opens a console window for login, and uses Ctrl where macOS uses ⌘

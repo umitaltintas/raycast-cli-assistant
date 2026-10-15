@@ -8,9 +8,9 @@ export const IS_WINDOWS = process.platform === "win32";
 export const FILE_MANAGER = IS_WINDOWS ? "File Explorer" : "Finder";
 export const MOD_KEY = IS_WINDOWS ? "Ctrl+" : "⌘";
 
-// The shell an approved command was written for. On Windows Claude Code has
-// both a Bash (Git Bash) and a PowerShell tool, and Codex's own shell is
-// PowerShell. On macOS "bash" commands run in the login zsh.
+// The shell a command was written for, to show it with the right syntax
+// highlighting. On Windows Claude Code has both a Bash (Git Bash) and a
+// PowerShell tool, and Codex's own shell is PowerShell.
 export type Shell = "bash" | "powershell";
 export const DEFAULT_SHELL: Shell = IS_WINDOWS ? "powershell" : "bash";
 
@@ -77,26 +77,4 @@ export function resolvePowerShell(): string {
     join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
   ];
   return candidates.find((p) => existsSync(p)) ?? "powershell.exe";
-}
-
-// Found the way Claude Code finds it: CLAUDE_CODE_GIT_BASH_PATH, then next to
-// git.exe on PATH (Git\cmd\git.exe → Git\bin\bash.exe), then the default
-// install folders. bash.exe on PATH is not used: in System32 it is WSL.
-export function resolveGitBash(): string | undefined {
-  const custom = process.env.CLAUDE_CODE_GIT_BASH_PATH;
-  const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
-  const localPrograms = join(
-    process.env.LOCALAPPDATA ?? join(homedir(), "AppData", "Local"),
-    "Programs",
-  );
-  const candidates = [
-    ...(custom ? [custom] : []),
-    ...onPath("git.exe").flatMap((git) => [
-      join(git, "..", "..", "bin", "bash.exe"),
-      join(git, "..", "..", "..", "bin", "bash.exe"),
-    ]),
-    join(programFiles, "Git", "bin", "bash.exe"),
-    join(localPrograms, "Git", "bin", "bash.exe"),
-  ];
-  return candidates.find((p) => existsSync(p));
 }

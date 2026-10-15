@@ -21,8 +21,9 @@ import {
 import { withMissingContext } from "../lib/chatContext";
 import { useModels } from "../lib/modelCatalog";
 import { defaultOptions, optionBadges, RequestOptions } from "../lib/options";
-import { MOD_KEY, Shell, shellLang } from "../lib/platform";
+import { MOD_KEY, shellLang } from "../lib/platform";
 import { PROVIDER_NAMES } from "../lib/provider";
+import { discardPrewarmed, prewarmModel } from "../lib/run";
 import { commandResultPrompt, runApprovedCommand } from "../lib/shell";
 import {
   Conversation,
@@ -31,9 +32,15 @@ import {
   saveConversation,
   titleFrom,
 } from "../lib/storage";
+import { DeniedCommand, PermissionRequest } from "../lib/types";
 import { useModelStream } from "../lib/useModelStream";
 import { HistoryView } from "./HistoryView";
-import { ErrorActions, OptionActions, STOP_SHORTCUT } from "./shared";
+import {
+  ApprovalActions,
+  ErrorActions,
+  OptionActions,
+  STOP_SHORTCUT,
+} from "./shared";
 
 export function ChatView({
   initial,
@@ -107,7 +114,7 @@ export function ChatView({
           ? errorMarkdown(result.error!)
           : undefined,
       commands: result.commands,
-      shells: result.shells,
+      denied: result.denied,
       steps: result.steps,
       durationMs: result.durationMs,
     };
@@ -121,6 +128,28 @@ export function ChatView({
     setConversation(updated);
     setPendingId(undefined);
   };
+
+  // The CLI for the next question starts while the user types (on opening,
+  // after each answer, after a model or option change); leaving ends it.
+  useEffect(() => {
+    if (stream.isLoading) return;
+    const timer = setTimeout(
+      () =>
+        prewarmModel({
+          model: conversation.model,
+          sessionId: conversation.sessionId,
+          ...conversation.options,
+        }),
+      0,
+    );
+    return () => clearTimeout(timer);
+  }, [
+    stream.isLoading,
+    conversation.model,
+    conversation.sessionId,
+    conversation.options,
+  ]);
+  useEffect(() => discardPrewarmed, []);
 
   useEffect(() => {
     // Deferred for the same StrictMode reason as in AnswerView.
@@ -163,8 +192,8 @@ export function ChatView({
     if (updated.messages.length) saveConversation(updated);
   };
 
-  // The approved command runs here, not in the CLI; its output goes back as
-  // the next message.
+  // A Codex command the user approved runs here, not in the CLI; its output
+  // goes back as the next message. Claude's commands never run here.
   const runCommand = async (m: Message, command: string) => {
     const cleared = withoutCommands(conversation, m.id);
     setConversation(cleared);
@@ -173,14 +202,9 @@ export function ChatView({
       title: "Running command…",
       message: command,
     });
-    const shell = m.shells?.[command];
-    const result = await runApprovedCommand(command, shell);
+    const result = await runApprovedCommand(command);
     toast.hide();
-    await send(
-      `$ ${command}`,
-      commandResultPrompt(command, result, shell),
-      cleared,
-    );
+    await send(`$ ${command}`, commandResultPrompt(command, result), cleared);
   };
 
   const dismissCommands = (m: Message) => {
@@ -193,9 +217,12 @@ export function ChatView({
   const detailOf = (m: Message) => {
     const question = `**${m.question.replace(/\n+/g, " ")}**\n\n---\n\n`;
     if (m.id === pendingId) {
-      return `${question}${stepsMarkdown(stream.steps)}${stream.text || `_${modelLabel(m.model ?? conversation.model)} is thinking…_`}`;
+      const thinking = stream.approvals?.length
+        ? ""
+        : `_${modelLabel(m.model ?? conversation.model)} is thinking…_`;
+      return `${question}${stepsMarkdown(stream.steps)}${stream.text || thinking}${approvalsMarkdown(stream.approvals, true)}`;
     }
-    return `${question}${stepsMarkdown(m.steps)}${m.error ?? m.answer}${commandsMarkdown(m.commands, m.shells)}${footerMarkdown(m.model, modelLabel, m.durationMs)}`;
+    return `${question}${stepsMarkdown(m.steps)}${m.error ?? m.answer}${commandsMarkdown(m.commands)}${deniedMarkdown(m.denied)}${footerMarkdown(m.model, modelLabel, m.durationMs)}`;
   };
 
   const messages = [...conversation.messages].reverse();
@@ -277,6 +304,8 @@ export function ChatView({
         />
       ) : (
         messages.map((m) => {
+          const approval =
+            m.id === pendingId ? stream.approvals?.[0] : undefined;
           return (
             <List.Item
               key={m.id}
@@ -285,15 +314,28 @@ export function ChatView({
               icon={
                 m.error
                   ? Icon.ExclamationMark
-                  : m.id === pendingId
-                    ? Icon.CircleProgress
-                    : m.commands?.length
-                      ? Icon.Terminal
-                      : Icon.Message
+                  : approval
+                    ? Icon.Terminal
+                    : m.id === pendingId
+                      ? Icon.CircleProgress
+                      : m.commands?.length
+                        ? Icon.Terminal
+                        : Icon.Message
               }
               detail={<List.Item.Detail markdown={detailOf(m)} />}
               actions={
                 <ActionPanel>
+                  {approval ? (
+                    <ApprovalActions
+                      approval={approval}
+                      note={input}
+                      onAllow={stream.allow}
+                      onDeny={(id, note) => {
+                        stream.deny(id, note);
+                        if (note) setInput("");
+                      }}
+                    />
+                  ) : null}
                   {sendAction}
                   {m.commands?.length && !stream.isLoading ? (
                     <ActionPanel.Section>
@@ -396,19 +438,46 @@ function withoutCommands(c: Conversation, messageId: string): Conversation {
   return {
     ...c,
     messages: c.messages.map((m) =>
-      m.id === messageId ? { ...m, commands: undefined, shells: undefined } : m,
+      m.id === messageId ? { ...m, commands: undefined } : m,
     ),
   };
 }
 
-export function commandsMarkdown(
-  commands: string[] | undefined,
-  shells?: Record<string, Shell>,
+// Commands waiting mid-turn, as a punchlist: ↵ answers the first one. In
+// Chat a note typed before ⌘↵ tells Claude what to do instead.
+export function approvalsMarkdown(
+  approvals: PermissionRequest[] | undefined,
+  withNote = false,
 ): string {
+  if (!approvals?.length) return "";
+  const block = (a: PermissionRequest) =>
+    `\`\`\`${shellLang(a.shell)}\n${a.command}\n\`\`\``;
+  const [next, ...rest] = approvals;
+  const title = next.description ? `: ${next.description}` : "";
+  return [
+    `\n\n---\n\n**Wants to run${title}** (↵ runs it, ${MOD_KEY}↵ doesn't${withNote ? `; to tell Claude what to do instead, type it, then ${MOD_KEY}↵` : ""})`,
+    block(next),
+    ...(rest.length ? [`_Then ${rest.length} more:_`, ...rest.map(block)] : []),
+  ].join("\n\n");
+}
+
+// Codex's commands, waiting for approval after the answer.
+export function commandsMarkdown(commands: string[] | undefined): string {
   if (!commands?.length) return "";
   const blocks = commands
-    .map((c) => `\`\`\`${shellLang(shells?.[c])}\n${c}\n\`\`\``)
+    .map((c) => `\`\`\`${shellLang(undefined)}\n${c}\n\`\`\``)
     .join("\n\n");
   const verb = commands.length === 1 ? "this command" : "these commands";
   return `\n\n---\n\n**Wants to run ${verb}** (runs only if you approve it; ↵ or ${MOD_KEY}K):\n\n${blocks}`;
+}
+
+// Claude's commands that Claude Code refused without asking: only listed.
+export function deniedMarkdown(denied: DeniedCommand[] | undefined): string {
+  if (!denied?.length) return "";
+  const blocks = denied
+    .map((d) => `\`\`\`${shellLang(d.shell)}\n${d.command}\n\`\`\``)
+    .join("\n\n");
+  const [what, it] =
+    denied.length === 1 ? ["this command", "it"] : ["these commands", "them"];
+  return `\n\n---\n\n**Not run:** Claude Code's permission check refused ${what}. To run ${it} anyway, tell Claude to go ahead.\n\n${blocks}`;
 }

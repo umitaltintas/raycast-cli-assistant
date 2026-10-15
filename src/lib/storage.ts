@@ -2,8 +2,9 @@ import { environment, LocalStorage } from "@raycast/api";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { RequestOptions } from "./options";
-import { Shell } from "./platform";
-import { RateLimit } from "./types";
+import { DEFAULT_SHELL, Shell } from "./platform";
+import { providerOf } from "./provider";
+import { DeniedCommand, RateLimit } from "./types";
 
 export interface Message {
   id: string;
@@ -13,9 +14,10 @@ export interface Message {
   error?: string;
   // The model can change mid-chat; --resume keeps the context.
   model?: string;
-  // Shell commands the model asked to run, until approved or dismissed.
+  // Codex: shell commands it asked to run, until approved or dismissed.
   commands?: string[];
-  shells?: Record<string, Shell>;
+  // Claude: shell commands Claude Code refused without asking; only listed.
+  denied?: DeniedCommand[];
   steps?: string[];
   durationMs?: number;
 }
@@ -56,10 +58,36 @@ export async function listConversations(): Promise<ConversationSummary[]> {
 
 export function loadConversation(id: string): Conversation | undefined {
   try {
-    return JSON.parse(readFileSync(join(dir(), `${id}.json`), "utf8"));
+    return withoutClaudeCommands(
+      JSON.parse(readFileSync(join(dir(), `${id}.json`), "utf8")),
+    );
   } catch {
     return undefined;
   }
+}
+
+// Chats saved before 2026-10-14 can hold Claude commands waiting for approval
+// (with the shell of each in `shells`). The extension no longer runs Claude's
+// commands, so they load as denied ones, only listed.
+function withoutClaudeCommands(c: Conversation): Conversation {
+  return {
+    ...c,
+    messages: c.messages.map((m) => {
+      const { shells, ...rest } = m as Message & {
+        shells?: Record<string, Shell>;
+      };
+      if (!m.commands?.length || providerOf(m.model ?? c.model) === "codex")
+        return rest;
+      return {
+        ...rest,
+        commands: undefined,
+        denied: m.commands.map((command) => ({
+          command,
+          shell: shells?.[command] ?? DEFAULT_SHELL,
+        })),
+      };
+    }),
+  };
 }
 
 export async function saveConversation(c: Conversation): Promise<void> {

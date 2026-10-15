@@ -14,8 +14,14 @@ import { useModels } from "../lib/modelCatalog";
 import { defaultOptions, optionBadges, RequestOptions } from "../lib/options";
 import { newConversation, saveConversation, titleFrom } from "../lib/storage";
 import { useModelStream } from "../lib/useModelStream";
-import { ChatView, commandsMarkdown } from "./ChatView";
 import {
+  approvalsMarkdown,
+  ChatView,
+  commandsMarkdown,
+  deniedMarkdown,
+} from "./ChatView";
+import {
+  ApprovalActions,
   ErrorActions,
   ModelSubmenu,
   OptionActions,
@@ -73,7 +79,8 @@ export function AnswerView(props: AnswerViewProps) {
     setSessionId(crypto.randomUUID());
   };
 
-  // An approved command continues in Chat, which runs it and keeps going.
+  // An approved (Codex) command continues in Chat, which runs it and keeps
+  // going.
   const continueInChat = async (command?: string) => {
     // Readable folders (Finder selection) stay readable in the chat.
     const c = newConversation(model, {
@@ -91,18 +98,20 @@ export function AnswerView(props: AnswerViewProps) {
       steps: stream.steps,
       durationMs: stream.durationMs,
       commands: command ? undefined : stream.commands,
-      shells: stream.shells,
+      denied: stream.denied,
     });
     await saveConversation(c);
     push(<ChatView initial={c} autoRun={command} />);
   };
 
+  const approval = stream.approvals?.[0];
   const body =
     stream.error && !stream.text
       ? errorMarkdown(stream.error)
-      : stream.text || `_${modelLabel(model)} is thinking…_`;
+      : stream.text || (approval ? "" : `_${modelLabel(model)} is thinking…_`);
   const commands = stream.isLoading ? undefined : stream.commands;
-  const markdown = `**${escape(props.question)}**\n\n---\n\n${stepsMarkdown(stream.steps)}${commands?.length && !stream.text ? "" : body}${commandsMarkdown(commands, stream.shells)}`;
+  const denied = stream.isLoading ? undefined : stream.denied;
+  const markdown = `**${escape(props.question)}**\n\n---\n\n${stepsMarkdown(stream.steps)}${(commands?.length || denied?.length) && !stream.text ? "" : body}${approvalsMarkdown(stream.approvals)}${commandsMarkdown(commands)}${deniedMarkdown(denied)}`;
   const done = !stream.isLoading && !stream.error && stream.text.length > 0;
 
   return (
@@ -138,6 +147,13 @@ export function AnswerView(props: AnswerViewProps) {
       }
       actions={
         <ActionPanel>
+          {approval ? (
+            <ApprovalActions
+              approval={approval}
+              onAllow={stream.allow}
+              onDeny={stream.deny}
+            />
+          ) : null}
           {stream.isLoading ? (
             <Action
               title="Stop"

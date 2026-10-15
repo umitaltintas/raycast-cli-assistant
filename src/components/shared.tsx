@@ -6,7 +6,7 @@ import {
   openExtensionPreferences,
 } from "@raycast/api";
 import { spawn } from "node:child_process";
-import { ModelError } from "../lib/types";
+import { ModelError, PermissionRequest } from "../lib/types";
 import { groupByProvider, ModelOption, sameModel } from "../lib/models";
 import { EFFORTS, RequestOptions } from "../lib/options";
 import { IS_WINDOWS } from "../lib/platform";
@@ -138,6 +138,33 @@ export function ModelSubmenu(props: {
 export const WEB_SEARCH_SHORTCUT = shortcut(["cmd", "shift"], "w");
 export const TOOLS_SHORTCUT = shortcut(["cmd", "shift"], "t");
 export const EFFORT_SHORTCUT = shortcut(["cmd", "shift"], "e");
+
+// A shell command waiting mid-turn: ↵ runs it (Claude Code runs it and goes
+// on), the second action (⌘↵ / Ctrl+↵) declines it. In Chat, text typed in the
+// message box goes with the decline as a note on what to do instead.
+export function ApprovalActions(props: {
+  approval: PermissionRequest;
+  note?: string;
+  onAllow: (id: string) => void;
+  onDeny: (id: string, note?: string) => void;
+}) {
+  const { approval } = props;
+  const note = props.note?.trim();
+  return (
+    <ActionPanel.Section>
+      <Action
+        title="Run Command"
+        icon={Icon.Terminal}
+        onAction={() => props.onAllow(approval.id)}
+      />
+      <Action
+        title={note ? "Don't Run, Tell Claude" : "Don't Run"}
+        icon={note ? Icon.Bubble : Icon.XMarkCircle}
+        onAction={() => props.onDeny(approval.id, note)}
+      />
+    </ActionPanel.Section>
+  );
+}
 
 // Web search, tools and effort for the current chat or answer.
 export function OptionActions(props: {

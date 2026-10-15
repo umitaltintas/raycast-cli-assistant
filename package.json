@@ -388,7 +388,7 @@
       "name": "chatTools",
       "title": "Tools",
       "label": "Let Ask AI and Chat read files and propose shell commands",
-      "description": "Default for Ask AI and new chats; toggle it with ⌘⇧T (Ctrl+Shift+T on Windows). Files are only read; a shell command that changes something is shown first and runs only after you approve it.",
+      "description": "Default for Ask AI and new chats; toggle it with ⌘⇧T (Ctrl+Shift+T on Windows). Files are only read. Claude Code runs the commands its auto mode check allows and asks you about some; ones it refuses are listed after the answer, never run by the extension. Codex shows a command that changes something and runs it only after you approve it.",
       "type": "checkbox",
       "required": false,
       "default": false
