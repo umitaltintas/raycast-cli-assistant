@@ -185,9 +185,8 @@ export default function Command() {
               <ModelSubmenu
                 title="Change Model"
                 current={model}
-                models={catalog.models}
+                catalog={catalog}
                 onSelect={changeModel}
-                onRefresh={() => catalog.refresh(true)}
               />
             </ActionPanel>
           }

@@ -233,3 +233,18 @@ test("steps and shell helpers", () => {
     commands: ["rm x"],
   });
 });
+
+test("hidden models leave the menus, except the current one", () => {
+  const values = () => lib.availableModels().map((m) => m.value);
+  assert.ok(values().includes("sonnet"));
+  lib.setModelHidden("sonnet", true);
+  lib.setModelHidden("haiku", true);
+  assert.ok(!values().includes("sonnet"));
+  // haiku is the current model (preference), so it stays selectable.
+  assert.ok(values().includes("haiku"));
+  assert.ok(lib.allModels().some((m) => m.value === "sonnet"));
+  lib.setModelHidden("sonnet", false);
+  lib.setModelHidden("haiku", false);
+  assert.deepEqual(lib.hiddenModels(), []);
+  assert.ok(values().includes("sonnet"));
+});

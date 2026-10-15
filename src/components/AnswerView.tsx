@@ -25,6 +25,7 @@ import {
   ErrorActions,
   ModelSubmenu,
   OptionActions,
+  PreferencesAction,
   STOP_SHORTCUT,
 } from "./shared";
 
@@ -205,15 +206,17 @@ export function AnswerView(props: AnswerViewProps) {
               <ModelSubmenu
                 title="Ask Another Model"
                 current={model}
-                models={catalog.models}
+                catalog={catalog}
                 onSelect={regenerate}
-                onRefresh={() => catalog.refresh(true)}
               />
               <OptionActions
                 options={options}
                 onChange={changeOptions}
                 showTools
               />
+              <ActionPanel.Section>
+                <PreferencesAction />
+              </ActionPanel.Section>
             </>
           ) : null}
         </ActionPanel>

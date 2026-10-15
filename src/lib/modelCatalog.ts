@@ -1,15 +1,19 @@
 import { spawn } from "./spawn";
 import { createInterface } from "node:readline";
+import { showToast, Toast } from "@raycast/api";
 import { useCallback, useEffect, useState } from "react";
 import { childEnv, resolveClaudeBinary, workDir } from "./claude";
 import { fetchCodexModels, resolveCodexBinary } from "./codex";
 import { Provider, providerOf } from "./provider";
 import {
+  allModels,
   availableModels,
+  hiddenModels,
   loadCatalog,
   ModelCatalog,
   ModelOption,
   saveCatalog,
+  setModelHidden,
 } from "./models";
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -163,25 +167,53 @@ export async function refreshCatalog(
 }
 
 // The cached list shows immediately and is refreshed in the background when stale.
+// A failed refresh keeps the cached/fallback list; the reason is kept in
+// `error` (shown in an empty chat) and, when asked for, in a toast.
 export function useModels() {
   const [models, setModels] = useState<ModelOption[]>(availableModels);
   const [isRefreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string>();
 
   const refresh = useCallback(async (force = false) => {
     setRefreshing(true);
     try {
       await refreshCatalog(force);
       setModels(availableModels());
-    } catch {
-      // keep the cached/fallback list if the CLI is unreachable
+      setError(undefined);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(`Model list not updated: ${message}`);
+      if (force) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Model list not updated",
+          message,
+        });
+      }
     } finally {
       setRefreshing(false);
     }
+  }, []);
+
+  const setHidden = useCallback((model: string, hidden: boolean) => {
+    setModelHidden(model, hidden);
+    setModels(availableModels());
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  return { models, isRefreshing, refresh };
+  return {
+    models,
+    // For Hide/Show: the full list and what is hidden.
+    allModels,
+    hidden: hiddenModels,
+    isRefreshing,
+    error,
+    refresh,
+    setHidden,
+  };
 }
+
+export type ModelsState = ReturnType<typeof useModels>;

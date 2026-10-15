@@ -7,7 +7,8 @@ import {
 } from "@raycast/api";
 import { spawn } from "node:child_process";
 import { ModelError, PermissionRequest } from "../lib/types";
-import { groupByProvider, ModelOption, sameModel } from "../lib/models";
+import { groupByProvider, sameModel } from "../lib/models";
+import { ModelsState } from "../lib/modelCatalog";
 import { EFFORTS, RequestOptions } from "../lib/options";
 import { IS_WINDOWS } from "../lib/platform";
 import { resolveClaudeBinary } from "../lib/claude";
@@ -92,17 +93,17 @@ export const MODEL_SHORTCUT = shortcut(["cmd", "shift"], "r");
 export function ModelSubmenu(props: {
   title: string;
   current: string;
-  models: ModelOption[];
+  catalog: ModelsState;
   onSelect: (model: string) => void;
-  onRefresh: () => void;
 }) {
+  const { catalog } = props;
   return (
     <ActionPanel.Submenu
       title={props.title}
       icon={Icon.Switch}
       shortcut={MODEL_SHORTCUT}
     >
-      {groupByProvider(props.models).map((g) => (
+      {groupByProvider(catalog.models).map((g) => (
         <ActionPanel.Section
           key={g.provider}
           title={PROVIDER_NAMES[g.provider]}
@@ -120,18 +121,58 @@ export function ModelSubmenu(props: {
         </ActionPanel.Section>
       ))}
       <ActionPanel.Section>
-        <Action
-          title="Refresh Model List"
-          icon={Icon.ArrowClockwise}
-          onAction={props.onRefresh}
-        />
-        <Action
-          title="Add Extra Model…"
-          icon={Icon.Plus}
-          onAction={openExtensionPreferences}
-        />
+        <ModelListActions catalog={catalog} />
       </ActionPanel.Section>
     </ActionPanel.Submenu>
+  );
+}
+
+// Refresh, hide or show models, add one: in the model menus and Chat.
+export function ModelListActions({ catalog }: { catalog: ModelsState }) {
+  const hidden = catalog.hidden();
+  return (
+    <>
+      <Action
+        title="Refresh Model List"
+        icon={Icon.ArrowClockwise}
+        onAction={() => catalog.refresh(true)}
+      />
+      <ActionPanel.Submenu title="Hide or Show Models" icon={Icon.EyeDisabled}>
+        {groupByProvider(catalog.allModels()).map((g) => (
+          <ActionPanel.Section
+            key={g.provider}
+            title={PROVIDER_NAMES[g.provider]}
+          >
+            {g.models.map((m) => {
+              const isHidden = hidden.includes(m.value);
+              return (
+                <Action
+                  key={m.value}
+                  title={isHidden ? `Show ${m.title}` : `Hide ${m.title}`}
+                  icon={isHidden ? Icon.EyeDisabled : Icon.Eye}
+                  onAction={() => catalog.setHidden(m.value, !isHidden)}
+                />
+              );
+            })}
+          </ActionPanel.Section>
+        ))}
+      </ActionPanel.Submenu>
+      <Action
+        title="Add Extra Model…"
+        icon={Icon.Plus}
+        onAction={openExtensionPreferences}
+      />
+    </>
+  );
+}
+
+export function PreferencesAction() {
+  return (
+    <Action
+      title="Open Extension Preferences"
+      icon={Icon.Gear}
+      onAction={openExtensionPreferences}
+    />
   );
 }
 

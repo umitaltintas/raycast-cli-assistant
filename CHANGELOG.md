@@ -8,6 +8,9 @@ Windows support and mid-turn approval come from [@kohowski](https://github.com/k
 - Ask About Selected Files is read-only again (`Read`, `Glob`, `Grep` in the selected folders, no shell) and starts from the Web Search preference; turn on Tools on the answer for shell commands
 - Explain no longer always searches the web (~1.4k extra tokens per answer)
 - In Chat, a typed note makes ↵ _Don't Run, Tell Claude_; before, ↵ ran the command and dropped the note
+- _Hide or Show Models_ in the model menus and Chat takes models you never use out of the menus (the current one always stays). Ideas for this and the next two from [@syxb2](https://github.com/syxb2)'s fork
+- When the model list can't be updated, an empty chat says why and _Refresh Model List_ shows a toast; before, the old list stayed without a word
+- _Open Extension Preferences_ in Chat's and answers' actions
 - Tests: `npm test` runs both runners against a fake CLI (no network, ~2 s); CI runs tests, ESLint and Prettier on every push and before each release. The approach comes from [@syxb2](https://github.com/syxb2)'s fork
 
 ## [Options per Command] - 2026-10-15

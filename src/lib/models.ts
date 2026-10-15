@@ -79,8 +79,39 @@ export function modelLabel(model: string): string {
   return m[4] ? `${name} (1M)` : name;
 }
 
-// CLI list (or fallback) + Extra Models preference + the current model if missing.
+// Models hidden from the menus (Hide Model), by value. A file for the same
+// reason as current-model: menus are built synchronously.
+export function hiddenModels(): string[] {
+  try {
+    const saved = JSON.parse(
+      readFileSync(supportFile("hidden-models.json"), "utf8"),
+    );
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setModelHidden(model: string, hidden: boolean): void {
+  const rest = hiddenModels().filter((m) => m !== model);
+  writeFileSync(
+    supportFile("hidden-models.json"),
+    JSON.stringify(hidden ? [...rest, model] : rest),
+  );
+}
+
+// What the menus offer: every model except hidden ones. The current model
+// always stays, so the menu can show what is selected.
 export function availableModels(): ModelOption[] {
+  const hidden = hiddenModels();
+  const current = currentModel();
+  return allModels().filter(
+    (m) => !hidden.includes(m.value) || sameModel(m.value, current),
+  );
+}
+
+// CLI list (or fallback) + Extra Models preference + the current model if missing.
+export function allModels(): ModelOption[] {
   const list = [...(loadCatalog()?.models ?? FALLBACK_MODELS)];
   const custom = (getPreferenceValues<Preferences>().customModels ?? "")
     .split(",")

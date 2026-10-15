@@ -19,7 +19,7 @@ import {
   setCurrentModel,
 } from "../lib/models";
 import { withMissingContext } from "../lib/chatContext";
-import { useModels } from "../lib/modelCatalog";
+import { ModelsState, useModels } from "../lib/modelCatalog";
 import { defaultOptions, optionBadges, RequestOptions } from "../lib/options";
 import { MOD_KEY, shellLang } from "../lib/platform";
 import { PROVIDER_NAMES } from "../lib/provider";
@@ -38,7 +38,9 @@ import { HistoryView } from "./HistoryView";
 import {
   ApprovalActions,
   ErrorActions,
+  ModelListActions,
   OptionActions,
+  PreferencesAction,
   STOP_SHORTCUT,
 } from "./shared";
 
@@ -282,7 +284,7 @@ export function ChatView({
           <ChatActions
             onNew={startNew}
             onHistory={() => push(<HistoryView />)}
-            onRefreshModels={() => catalog.refresh(true)}
+            catalog={catalog}
           />
           <OptionActions
             options={conversation.options ?? {}}
@@ -300,7 +302,10 @@ export function ChatView({
             modelLabel(conversation.model),
             ...optionBadges(conversation.options),
             "Type a question and press ↵",
-          ].join(" · ")}
+          ]
+            .join(" · ")
+            // Why the model menu may be out of date.
+            .concat(catalog.error ? `\n\n${catalog.error}` : "")}
         />
       ) : (
         messages.map((m) => {
@@ -385,7 +390,7 @@ export function ChatView({
                   <ChatActions
                     onNew={startNew}
                     onHistory={() => push(<HistoryView />)}
-                    onRefreshModels={() => catalog.refresh(true)}
+                    catalog={catalog}
                   />
                   <OptionActions
                     options={conversation.options ?? {}}
@@ -405,11 +410,11 @@ export function ChatView({
 function ChatActions({
   onNew,
   onHistory,
-  onRefreshModels,
+  catalog,
 }: {
   onNew: () => void;
   onHistory: () => void;
-  onRefreshModels: () => void;
+  catalog: ModelsState;
 }) {
   return (
     <ActionPanel.Section>
@@ -425,11 +430,8 @@ function ChatActions({
         shortcut={Keyboard.Shortcut.Common.ToggleQuickLook}
         onAction={onHistory}
       />
-      <Action
-        title="Refresh Model List"
-        icon={Icon.ArrowClockwise}
-        onAction={onRefreshModels}
-      />
+      <ModelListActions catalog={catalog} />
+      <PreferencesAction />
     </ActionPanel.Section>
   );
 }
