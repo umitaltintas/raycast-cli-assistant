@@ -171,6 +171,8 @@ More details:
 - **Raycast environment:** Raycast extension processes have no `USER` / `LOGNAME`; without them Claude Code can't find its Keychain login and says `Not logged in`. The extension sets them.
 - If `ANTHROPIC_API_KEY` is set, the CLI would use it instead of your subscription, so it is removed from the child process.
 
+**Tests:** `npm test` runs the Claude and Codex runners against a fake CLI (`tests/fixtures/fake-cli.mjs`) that prints what the real ones print: the flags each option turns into, streaming, mid-turn approval, refused commands, errors and Stop. No network or login, ~2 s. `npm run check` adds ESLint and Prettier; CI runs it on every push and before each release. Adapted from [@syxb2](https://github.com/syxb2)'s fork.
+
 ## Terms
 
 The extension does not collect, store or relay credentials. It only runs the unmodified Claude Code or Codex CLI that you installed, and sign-in happens through Anthropic's or OpenAI's own flow. Your usage is subject to their terms ([Anthropic](https://code.claude.com/docs/en/legal-and-compliance), [OpenAI](https://openai.com/policies/)) and your plan's limits.

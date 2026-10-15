@@ -170,7 +170,10 @@ const APPROVE_PROMPT = [
 
 const APPROVE_BLOCK = /\n*```approve\n([\s\S]*?)\n?```\s*/g;
 
-function splitCommands(text: string): { text: string; commands: string[] } {
+export function splitCommands(text: string): {
+  text: string;
+  commands: string[];
+} {
   const commands = [...text.matchAll(APPROVE_BLOCK)]
     .map((m) => m[1].trim())
     .filter(Boolean);

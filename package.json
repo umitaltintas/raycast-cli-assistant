@@ -474,6 +474,7 @@
     "@raycast/eslint-config": "^2.0.4",
     "@types/node": "22.19.17",
     "@types/react": "19.0.10",
+    "esbuild": "^0.28.2",
     "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
@@ -481,6 +482,8 @@
   "scripts": {
     "build": "ray build",
     "dev": "ray develop",
-    "lint": "ray lint"
+    "lint": "ray lint",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && eslint src tests && prettier --check src tests package.json"
   }
 }

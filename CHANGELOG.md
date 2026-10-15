@@ -8,6 +8,7 @@ Windows support and mid-turn approval come from [@kohowski](https://github.com/k
 - Ask About Selected Files is read-only again (`Read`, `Glob`, `Grep` in the selected folders, no shell) and starts from the Web Search preference; turn on Tools on the answer for shell commands
 - Explain no longer always searches the web (~1.4k extra tokens per answer)
 - In Chat, a typed note makes ↵ _Don't Run, Tell Claude_; before, ↵ ran the command and dropped the note
+- Tests: `npm test` runs both runners against a fake CLI (no network, ~2 s); CI runs tests, ESLint and Prettier on every push and before each release. The approach comes from [@syxb2](https://github.com/syxb2)'s fork
 
 ## [Options per Command] - 2026-10-15
 

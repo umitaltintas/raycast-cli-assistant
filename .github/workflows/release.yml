@@ -22,6 +22,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Test and lint
+        run: npm run check
+
       - name: Build
         run: |
           npx ray build -e dist -o dist -I
