@@ -35,16 +35,18 @@ export interface AnswerViewProps {
   question: string;
   systemPrompt?: string;
   navigationTitle?: string;
-  // Web search, effort, tools or readable folders.
+  // Web search, effort, tools and the Finder selection's folders.
   options?: RequestOptions;
 }
 
 export function AnswerView(props: AnswerViewProps) {
   const { push } = useNavigation();
   const [model, setModel] = useState(currentModel);
-  const [options, setOptions] = useState<RequestOptions>(
-    () => props.options ?? {},
-  );
+  // Every answer starts with the effort preference; the command adds the rest.
+  const [options, setOptions] = useState<RequestOptions>(() => ({
+    effort: defaultOptions().effort,
+    ...props.options,
+  }));
   // Each run opens its own session; "Continue in Chat" resumes it with --resume.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const stream = useModelStream();
@@ -82,11 +84,9 @@ export function AnswerView(props: AnswerViewProps) {
   // An approved (Codex) command continues in Chat, which runs it and keeps
   // going.
   const continueInChat = async (command?: string) => {
-    // Readable folders (Finder selection) stay readable in the chat.
-    const c = newConversation(model, {
-      ...options,
-      tools: options.tools || defaultOptions().tools,
-    });
+    // The chat starts with the answer's options as they are and can switch
+    // them one by one.
+    const c = newConversation(model, options);
     c.sessionId = sessionId;
     c.title = titleFrom(props.question);
     c.messages.push({
@@ -212,7 +212,7 @@ export function AnswerView(props: AnswerViewProps) {
               <OptionActions
                 options={options}
                 onChange={changeOptions}
-                showTools={!options.readDirs}
+                showTools
               />
             </>
           ) : null}

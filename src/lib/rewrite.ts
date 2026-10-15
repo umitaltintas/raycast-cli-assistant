@@ -5,6 +5,7 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
+import { defaultOptions } from "./options";
 import { runModel } from "./run";
 import { RunResult } from "./types";
 import { errorMarkdown } from "./format";
@@ -46,5 +47,6 @@ export function rewriteWith(buildPrompt: (text: string) => string) {
     runModel({
       prompt: buildPrompt(text),
       systemPrompt: REWRITE_SYSTEM_PROMPT,
+      effort: defaultOptions().effort,
     });
 }

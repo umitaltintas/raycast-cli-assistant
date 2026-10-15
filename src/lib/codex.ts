@@ -117,11 +117,11 @@ function classify(message: string): ModelError {
 // it off brought a "Say hi" from ~17.6k to ~4.5k input tokens (2026-10-11).
 // Written as -c keys rather than --disable: an unknown --disable feature
 // aborts the run, an unknown -c key is ignored, so older/newer versions work.
+// view_image goes with Tools (see optionArgs).
 const TRIMMED_FEATURES = [
   "apps",
   "plugins",
   "multi_agent",
-  "view_image",
   "image_generation",
   "goals",
   "tool_suggest",
@@ -140,15 +140,19 @@ const TRIM_ARGS = [
   ...TRIMMED_FEATURES.map((f) => `features.${f}=false`),
 ].flatMap((kv) => ["-c", kv]);
 
-// Codex reads files through its shell, so the shell stays on for reading; the
-// read-only sandbox blocks writes. Without it, ~640 fewer input tokens.
+// Tools: the shell, which Codex also reads files through (the read-only
+// sandbox blocks writes), and view_image for images, as Claude has Read.
+// Without the shell, ~640 fewer input tokens.
 function optionArgs(opts: RunOptions): string[] {
-  const shell = opts.tools || Boolean(opts.readDirs?.length);
   return [
     `web_search=${opts.webSearch ? '"live"' : '"disabled"'}`,
-    ...(shell
+    ...(opts.tools
       ? []
-      : ["features.shell_tool=false", "features.unified_exec=false"]),
+      : [
+          "features.shell_tool=false",
+          "features.unified_exec=false",
+          "features.view_image=false",
+        ]),
     ...(opts.effort ? [`model_reasoning_effort="${opts.effort}"`] : []),
   ].flatMap((kv) => ["-c", kv]);
 }

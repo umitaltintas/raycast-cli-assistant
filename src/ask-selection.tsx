@@ -1,5 +1,6 @@
 import { LaunchProps } from "@raycast/api";
 import { SelectionAnswer } from "./components/SelectionAnswer";
+import { defaultOptions } from "./lib/options";
 import { askAboutPrompt } from "./lib/prompts";
 
 export default function Command(
@@ -12,6 +13,8 @@ export default function Command(
       navigationTitle="About Selection"
       buildPrompt={(t) => askAboutPrompt(t, question)}
       question={() => question}
+      // A question like Ask AI's, so it starts the same way.
+      options={defaultOptions()}
     />
   );
 }

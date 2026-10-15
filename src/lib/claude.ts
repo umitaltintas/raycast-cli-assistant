@@ -118,20 +118,23 @@ const SHELL_TOOLS: Record<string, Shell> = IS_WINDOWS
   ? { Bash: "bash", PowerShell: "powershell" }
   : { Bash: "bash" };
 
-// Web search ~20 s instead of ~2 s, file reading ~2.5 s (measured
-// 2026-10-14). The shell is offered but never pre-approved: auto mode decides,
-// or the user mid-turn (see HOST_PROMPT_ARGS).
+// Offering a tool costs input tokens, not time; an answer is only slower when
+// the model uses one (a web search ~10 s instead of ~2 s, measured
+// 2026-10-15). Tools is Read (images and PDFs too: a PDF took four python3
+// calls and 11 s without it) and the shell, which also lists and searches
+// (Claude Code's own default set has no Glob or Grep, 2.1.300), in auto mode.
+// No --add-dir: a pre-approved Read reads anywhere, and auto mode writes
+// outside the working folder without it. The shell is never pre-approved:
+// auto mode decides, or the user mid-turn (see HOST_PROMPT_ARGS).
 function toolArgs(opts: Omit<RunOptions, "prompt">): string[] {
   const allowed: string[] = [];
   if (opts.webSearch) allowed.push("WebSearch", "WebFetch");
-  const dirs = opts.tools ? [homedir()] : (opts.readDirs ?? []);
-  if (dirs.length) allowed.push("Read", "Glob", "Grep");
+  if (opts.tools) allowed.push("Read");
   const tools = opts.tools
     ? [...allowed, ...Object.keys(SHELL_TOOLS)]
     : allowed;
   const args = ["--tools", tools.join(",")];
   if (allowed.length) args.push("--allowedTools", allowed.join(","));
-  for (const d of dirs) args.push("--add-dir", d);
   if (opts.effort) args.push("--effort", opts.effort);
   return args;
 }
@@ -321,7 +324,8 @@ export function runClaude(opts: RunOptions): Promise<RunResult> {
     opts.signal?.addEventListener("abort", onAbort, { once: true });
 
     // A shell command waits for the user (onPermission); anything else that
-    // asks (e.g. reading outside the allowed folders) is refused.
+    // asks is refused (Read and web search are pre-approved, so only the shell
+    // should).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onControlRequest = async (event: Record<string, any>) => {
       const request = event.request;

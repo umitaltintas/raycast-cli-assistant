@@ -10,7 +10,7 @@ Claude and ChatGPT plans include a coding CLI: Claude Code and Codex. This Rayca
 - **Fix Spelling and Grammar**, **Improve Writing**, **Make Shorter**: rewrite the selection in place
 - **Translate** as you type, or **Translate and Replace** the selection with one hotkey
 - **Summarize** and **Explain** the selection
-- **Ask About Selected Files**: questions about files and folders (PDFs, logs, code), read-only
+- **Ask About Selected Files**: questions about files and folders (PDFs, logs, code)
 - Optional **web search**, **reasoning effort** and **tools** (read files, run shell commands), switchable mid-chat
 - Any model your plan offers (Haiku, Sonnet, Opus, GPT-5.6…), switchable mid-chat, even between Claude and Codex
 
@@ -106,25 +106,25 @@ What differs from macOS:
 | **Chat** | A chat with follow-up questions. |
 | **Chat History** | Open or delete previous chats. |
 | **Ask About Selection** | Ask a question about the selected text. |
-| **Ask About Selected Files** | Ask about the files or folders selected in Finder (File Explorer on Windows). The model can read them and nothing else. |
+| **Ask About Selected Files** | Ask about the files or folders selected in Finder (File Explorer on Windows). The model gets their paths and starts with Tools on to look at them; turn Tools off on the answer to ask about the names alone. |
 | **Fix Spelling and Grammar** · **Improve Writing** · **Make Shorter** | Rewrite the selected text and paste the result over it. |
 | **Translate** | Translates as you type; selected text is filled in. The target language is remembered. |
 | **Translate and Replace** | Translates the selected text without opening a window and pastes it over the selection. |
-| **Summarize** · **Explain** | Summarize or explain the selected text (or the clipboard if nothing is selected), in your primary language. |
+| **Summarize** · **Explain** | Summarize or explain the selected text (or the clipboard if nothing is selected), in your primary language. Explain starts with Web Search on, and so does Summarize when the selection is only a link. |
 
 **Choosing a model:** from the dropdown in the search bar in Chat and Translate, or with <kbd>⌘</kbd><kbd>⇧</kbd><kbd>R</kbd> on an answer. Models are grouped by CLI (Claude Code, Codex). The list is not hardcoded: it comes from the installed CLIs and matches your plans, so new models show up on their own. The chosen model is shared by all commands and remembered; switching mid-chat keeps the context, even across Claude and Codex.
 
 On an answer: <kbd>↵</kbd> paste to the active app, <kbd>⌘</kbd><kbd>↵</kbd> continue in chat, <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> copy, <kbd>⌘</kbd><kbd>R</kbd> regenerate, <kbd>⌘</kbd><kbd>⇧</kbd><kbd>R</kbd> ask another model, <kbd>⌘</kbd><kbd>.</kbd> stop.
 
-**Options**, in Chat and on answers, start from the preferences and are remembered per chat:
+**Options** can be switched in Chat, where they are remembered per chat, and on answers, which asks again with the change. Every command uses the Reasoning Effort preference. Ask AI, Ask About Selection and new chats start from the Web Search and Tools preferences; Explain starts with Web Search, Ask About Selected Files with Tools, Summarize with neither (Web Search for a selected link). Continue in Chat carries the answer's options over as they are:
 
 | Option | Shortcut | What it does |
 | --- | --- | --- |
-| Web Search | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>W</kbd> | Lets the model search and open web pages. Slower: ~15–20 s with Claude, ~13 s with Codex. On an answer it asks again with search. |
-| Tools (Files and Shell) | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>T</kbd> | Ask AI and Chat. The model can read files in your home folder and run shell commands. Claude Code runs in auto mode: commands its safety check judges in line with your request run without asking, including ones you explicitly ask for. Any other command pauses the answer and is shown while Claude waits: <kbd>↵</kbd> *Run Command* (Claude Code runs it and goes on with its output), <kbd>⌘</kbd><kbd>↵</kbd> *Don't Run* (Claude is told you declined). In Chat, type a note first and <kbd>⌘</kbd><kbd>↵</kbd> becomes *Don't Run, Tell Claude*: the note answers the question, so Claude goes on with it in the same turn ("move it to the trash instead"). Several commands are asked one after another. A command Claude Code refuses without asking is listed after that answer as *Not run*, with no action; the extension never runs it. To run it anyway, tell Claude to go ahead, which auto mode reads as your approval. With Codex, read-only commands (`ls`, `df`, `lsof`…) run in its read-only sandbox and the rest wait for approval. |
+| Web Search | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>W</kbd> | Lets the model search and open web pages. An answer that searches is slower (~10–20 s with Claude, ~13 s with Codex); offering it costs ~1.4k input tokens but no time. |
+| Tools (Files and Shell) | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>T</kbd> | The model can read files (images and PDFs too) and run shell commands, which also list and search. Claude Code runs in auto mode: commands its safety check judges in line with your request run without asking, including ones you explicitly ask for. Any other command pauses the answer and is shown while Claude waits: <kbd>↵</kbd> *Run Command* (Claude Code runs it and goes on with its output), <kbd>⌘</kbd><kbd>↵</kbd> *Don't Run* (Claude is told you declined). In Chat, type a note first and <kbd>⌘</kbd><kbd>↵</kbd> becomes *Don't Run, Tell Claude*: the note answers the question, so Claude goes on with it in the same turn ("move it to the trash instead"). Several commands are asked one after another. A command Claude Code refuses without asking is listed after that answer as *Not run*, with no action; the extension never runs it. To run it anyway, tell Claude to go ahead, which auto mode reads as your approval. With Codex, read-only commands (`ls`, `df`, `lsof`…) run in its read-only sandbox and the rest wait for approval. |
 | Reasoning Effort | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>E</kbd> | Low to Max. Short questions rarely need more than the default. |
 
-While the model works, each step (web searches, pages opened, files read, commands run) is shown live and kept above the answer. The navigation title shows what is on (e.g. *My chat · Web · Tools*). Translate and the rewrite commands always run without them, to stay fast.
+While the model works, each step (web searches, pages opened, files read, commands run) is shown live and kept above the answer. The navigation title shows what is on (e.g. *My chat · Web · Tools*). Translate and the rewrite commands have no options: they run without web search and tools, with the effort preference.
 
 Tips:
 
@@ -138,9 +138,9 @@ Tips:
 | Default Model | Haiku, Sonnet, Opus or Fable (aliases that always resolve to the newest version), or Codex with its default model. A model you pick inside the extension overrides it. |
 | Primary Language | Your main language. Summaries and explanations of selected text are written in it, and Translate's Auto mode translates into it. |
 | Secondary Language | Translate's Auto mode translates text that is already in your primary language into this one. |
-| Web Search | Default for Ask AI and new chats. |
-| Tools | Default for Ask AI and new chats. |
-| Reasoning Effort | Default effort; *CLI Default* leaves it to the CLI. |
+| Web Search | Default for Ask AI, Ask About Selection and new chats. |
+| Tools | Default for Ask AI, Ask About Selection and new chats. |
+| Reasoning Effort | Effort for every command, switchable in Chat and on answers; *CLI Default* leaves it to the CLI. |
 | Extra Models | Comma-separated models missing from your plan's list (e.g. `claude-opus-5-5[1m]`). |
 | Claude CLI Path | Leave empty to try `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. |
 | Codex CLI Path | Leave empty to try Homebrew, `~/.local/bin`, npm and the copy bundled with the ChatGPT app. |
@@ -157,7 +157,7 @@ In my measurements this brings the time to the first answer from ~9 s down to ~3
 
 **Codex** runs as `codex exec --json` in a read-only sandbox; follow-ups use `codex exec resume`. Its coding-agent prompt is replaced with the assistant prompt (`model_instructions_file`), and the skills list, sandbox rules, apps, plugins, web search and other agent tools are turned off, which cuts a short request from ~17.6k to ~4.5k input tokens. Compared with Claude Code it is slower (~4.5 s for a short answer in my tests, almost all of it the round trip to OpenAI) and its answers arrive in one piece rather than streamed. When you switch between Claude and Codex mid-chat, the turns the other CLI answered are sent along as context, since each keeps its own history.
 
-**Options** map to CLI flags. Claude: `--tools WebSearch,WebFetch`, `Read,Glob,Grep` with `--add-dir`, `Bash` (and `PowerShell` on Windows), `--effort`, and with tools `--permission-mode auto`. With tools, permission questions come to the extension (`--input-format stream-json --permission-prompt-tool stdio`, the Agent SDK's `can_use_tool` protocol): a shell command that needs approval waits mid-turn until you answer (there is no time limit; Stop or leaving the view ends the turn), then Claude Code runs it itself (or is told you declined) and the turn goes on. Without this, `-p` mode refuses such commands on its own and the model retries them in other forms. Commands refused without asking (e.g. by auto mode) are only listed after the answer: the extension never runs a command meant for Claude Code. Codex: `web_search="live"`, `model_reasoning_effort`, and its shell in the read-only sandbox (turned off entirely when not needed, ~640 fewer tokens); commands the sandbox would block are asked for in an `approve` block; approving one runs it in the extension and sends the output as the next message.
+**Options** map to CLI flags. Claude: Web Search is `--tools WebSearch,WebFetch`; Tools is `Read` and `Bash` (and `PowerShell` on Windows) with `--permission-mode auto`; all but the shell are pre-approved (`--allowedTools`); and `--effort`. There is no `Glob` or `Grep` (the shell lists and searches) and no `--add-dir` (a pre-approved `Read` reads anywhere, and auto mode writes outside its working folder without it). Offering tools costs input tokens (~1.4k for Web Search, ~2.4k for Tools), not time, and auto mode adds none to an answer that runs no command. With tools, permission questions come to the extension (`--input-format stream-json --permission-prompt-tool stdio`, the Agent SDK's `can_use_tool` protocol): a shell command that needs approval waits mid-turn until you answer (there is no time limit; Stop or leaving the view ends the turn), then Claude Code runs it itself (or is told you declined) and the turn goes on. Without this, `-p` mode refuses such commands on its own and the model retries them in other forms. Commands refused without asking (e.g. by auto mode) are only listed after the answer: the extension never runs a command meant for Claude Code. Codex: `web_search="live"`, `model_reasoning_effort`, and with Tools its shell in the read-only sandbox and `view_image` for images (both turned off otherwise, ~640 fewer tokens); commands the sandbox would block are asked for in an `approve` block; approving one runs it in the extension and sends the output as the next message.
 
 More details:
 

@@ -1,4 +1,5 @@
 import { currentModel } from "./models";
+import { defaultOptions, Effort } from "./options";
 import { providerOf } from "./provider";
 import { runModel } from "./run";
 import { RunResult } from "./types";
@@ -18,6 +19,7 @@ export type TranslationRunner = (request: {
   prompt: string;
   systemPrompt: string;
   model?: string;
+  effort?: Effort;
 }) => Promise<RunResult>;
 
 export type RetryReason = "reversed" | "wrong-language";
@@ -105,11 +107,15 @@ export async function translateText(
 ): Promise<TranslationOutcome> {
   const effectiveModel = model ?? currentModel();
   const retries: RetryReason[] = [];
+  // The effort preference applies to the translations, not to the one-word
+  // language check.
+  const { effort } = defaultOptions();
   const ask = (dir: TranslationDirection, m = model, runner = run) =>
     runner({
       prompt: translationPrompt(input),
       systemPrompt: translateSystemPrompt(dir),
       model: m,
+      effort,
     });
 
   const primary = primaryLanguage();

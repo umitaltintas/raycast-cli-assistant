@@ -81,7 +81,7 @@ if (-not $gitBash) {
   if ($git) { $gitBash = Join-Path (Split-Path (Split-Path $git.Source)) 'bin\bash.exe' }
 }
 if ($gitBash -and (Test-Path $gitBash)) { Ok "Git Bash found ($gitBash)" }
-else { Warn 'Git Bash not found (optional): approved Bash commands need Git for Windows; PowerShell ones work without it.' }
+else { Warn "Git Bash not found (optional): Claude Code's Bash tool needs Git for Windows; its PowerShell tool works without it." }
 
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ("cli-assistant-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp | Out-Null

@@ -11,15 +11,18 @@ export const EFFORTS: { value: Effort; title: string }[] = [
   { value: "max", title: "Max" },
 ];
 
-// What a request may use beyond plain text. Everything is off by default:
-// each one makes answers slower and requests bigger.
+// What a request may use beyond plain text. Each command decides how its
+// answer starts (Ask AI and Chat from the preferences): each option makes
+// requests bigger, and an answer that uses it slower.
 export interface RequestOptions {
   webSearch?: boolean;
   effort?: Effort;
-  // Read files anywhere in the home folder and propose shell commands, which
-  // run only after the user approves them.
+  // Read files and run shell commands: Claude Code in auto mode, which asks
+  // about some; Codex in its read-only sandbox, a command that changes
+  // something only after the user approves it.
   tools?: boolean;
-  // Folders that may be read (Finder selection), without shell commands.
+  // Finder selection: the selected folders (or those of the selected files).
+  // Codex runs in the first one; Claude gets the paths in the prompt.
   readDirs?: string[];
 }
 

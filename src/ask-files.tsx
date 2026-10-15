@@ -3,7 +3,6 @@ import { statSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
 import { AnswerView } from "./components/AnswerView";
-import { defaultOptions } from "./lib/options";
 import { FILE_MANAGER, IS_WINDOWS } from "./lib/platform";
 import { askAboutFilesPrompt } from "./lib/prompts";
 
@@ -57,13 +56,13 @@ export default function Command(
   const names = selection.paths.map((p) => basename(p));
   const shown =
     names.length > 3 ? `${names.slice(0, 3).join(", ")}…` : names.join(", ");
-  const { effort, webSearch } = defaultOptions();
   return (
     <AnswerView
       navigationTitle={`About ${FILE_MANAGER} Selection`}
       prompt={askAboutFilesPrompt(selection.paths, question)}
       question={`${question} (${shown})`}
-      options={{ effort, webSearch, readDirs: selection.dirs }}
+      // Tools only; the effort preference comes with every answer.
+      options={{ tools: true, readDirs: selection.dirs }}
     />
   );
 }

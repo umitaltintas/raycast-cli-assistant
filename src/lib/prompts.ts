@@ -64,8 +64,10 @@ export function askAboutPrompt(text: string, question: string): string {
   return `${question}\n\n${answerIn()}\n\n${wrap(text)}`;
 }
 
-// The model reads the files itself (read-only tools), so only paths are sent.
+// Only the paths are sent: with Tools the model reads the files itself.
 export function askAboutFilesPrompt(paths: string[], question: string): string {
   const list = paths.map((p) => `- ${p}`).join("\n");
-  return `${question}\n\n${answerIn()} Read the files you need; they were selected in ${FILE_MANAGER}:\n\n${list}`;
+  // Neutral about reading: the answer can be asked again without Tools, and
+  // "Read the files you need" then got fake tool calls written as text.
+  return `${question}\n\n${answerIn()} The question is about these files and folders, selected in ${FILE_MANAGER}:\n\n${list}`;
 }

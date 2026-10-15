@@ -1,5 +1,15 @@
 # CLI Assistant Changelog
 
+## [Options per Command] - 2026-10-15
+
+- Tools is `Read` (images and PDFs too) and the shell (`Bash`, plus `PowerShell` on Windows) in auto mode. No more `Glob`, `Grep` or `--add-dir`: the shell lists and searches, and a pre-approved `Read` reads anywhere. Without Tools, requests are sent as before
+- Offering tools costs input tokens, not time: ~1.4k for Web Search and ~2.4k for Tools, on top of ~2.9k without (Opus). An answer is only slower when the model uses one
+- Every answer that can continue in Chat has both the Web Search and Tools actions, which ask again with the change; Ask About Selected Files had no Tools action
+- How each command starts: Ask AI, Ask About Selection and new chats from the preferences (Ask About Selection started with nothing). Explain with Web Search. Summarize with Web Search when the selection is only links (it summarized a link from memory). Ask About Selected Files with Tools instead of read-only file tools, so it can also run commands, or be asked again without tools about the names alone
+- The Reasoning Effort preference applies to every command. Summarize, Explain, Ask About Selection, the rewrite commands and Translate ignored it (Translate's one-word language check still runs without it)
+- Continue in Chat keeps the answer's options as they are; it also turned on Tools when that preference was on
+- Codex: its shell and `view_image` come with Tools, web search with Web Search
+
 ## [Pre-Started Chat] - 2026-10-15
 
 - Chat starts Claude Code before you send (when it opens and after each answer, with the chat's options), so its startup happens while you type: the first text came ~1 s after sending instead of ~10 s on a Windows laptop. Leaving the chat ends it

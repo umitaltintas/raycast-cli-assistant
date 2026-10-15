@@ -1,5 +1,6 @@
 import { Detail, Icon, List, showToast, Toast } from "@raycast/api";
 import { useEffect, useState } from "react";
+import { RequestOptions } from "../lib/options";
 import { readSourceText, SourceText } from "../lib/selection";
 import { AnswerView } from "./AnswerView";
 
@@ -8,6 +9,10 @@ interface Props {
   question: (source: SourceText) => string;
   systemPrompt?: string;
   navigationTitle: string;
+  // How the answer starts, possibly depending on the text; its actions turn
+  // options on or off and ask again.
+  options?:
+    RequestOptions | ((source: SourceText) => RequestOptions | undefined);
 }
 
 // Reads the selection and hands it to AnswerView; falls back to the clipboard.
@@ -44,6 +49,11 @@ export function SelectionAnswer(props: Props) {
       question={props.question(source)}
       systemPrompt={props.systemPrompt}
       navigationTitle={props.navigationTitle}
+      options={
+        typeof props.options === "function"
+          ? props.options(source)
+          : props.options
+      }
     />
   );
 }
