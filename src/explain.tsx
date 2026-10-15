@@ -7,8 +7,6 @@ export default function Command() {
       navigationTitle="Explanation"
       buildPrompt={explainPrompt}
       question={(s) => `Explain: ${s.text}`}
-      // Terms, names and errors are often newer than the model.
-      options={{ webSearch: true }}
     />
   );
 }

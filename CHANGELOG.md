@@ -1,5 +1,14 @@
 # CLI Assistant Changelog
 
+## [Auto Mode Is Opt-In] - 2026-10-15
+
+Windows support and mid-turn approval come from [@kohowski](https://github.com/kohowski)'s fork.
+
+- Claude Code's auto mode is a preference (_Claude Code Auto Mode_, off by default). Off, every shell command that changes something asks first; on, Claude Code's safety check runs the ones it judges in line with your request
+- Ask About Selected Files is read-only again (`Read`, `Glob`, `Grep` in the selected folders, no shell) and starts from the Web Search preference; turn on Tools on the answer for shell commands
+- Explain no longer always searches the web (~1.4k extra tokens per answer)
+- In Chat, a typed note makes ↵ _Don't Run, Tell Claude_; before, ↵ ran the command and dropped the note
+
 ## [Options per Command] - 2026-10-15
 
 - Tools is `Read` (images and PDFs too) and the shell (`Bash`, plus `PowerShell` on Windows) in auto mode. No more `Glob`, `Grep` or `--add-dir`: the shell lists and searches, and a pre-approved `Read` reads anywhere. Without Tools, requests are sent as before

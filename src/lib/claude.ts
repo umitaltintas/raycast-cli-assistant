@@ -122,28 +122,37 @@ const SHELL_TOOLS: Record<string, Shell> = IS_WINDOWS
 // the model uses one (a web search ~10 s instead of ~2 s, measured
 // 2026-10-15). Tools is Read (images and PDFs too: a PDF took four python3
 // calls and 11 s without it) and the shell, which also lists and searches
-// (Claude Code's own default set has no Glob or Grep, 2.1.300), in auto mode.
-// No --add-dir: a pre-approved Read reads anywhere, and auto mode writes
-// outside the working folder without it. The shell is never pre-approved:
-// auto mode decides, or the user mid-turn (see HOST_PROMPT_ARGS).
+// (Claude Code's own default set has no Glob or Grep, 2.1.300). No --add-dir:
+// a pre-approved Read reads anywhere. The shell is never pre-approved: the
+// user answers mid-turn (see HOST_PROMPT_ARGS), or auto mode if turned on.
+// A Finder selection without Tools is read-only: Read, Glob and Grep in the
+// selected folders, no shell.
 function toolArgs(opts: Omit<RunOptions, "prompt">): string[] {
   const allowed: string[] = [];
   if (opts.webSearch) allowed.push("WebSearch", "WebFetch");
+  const readOnly = !opts.tools && !!opts.readDirs?.length;
   if (opts.tools) allowed.push("Read");
+  else if (readOnly) allowed.push("Read", "Glob", "Grep");
   const tools = opts.tools
     ? [...allowed, ...Object.keys(SHELL_TOOLS)]
     : allowed;
   const args = ["--tools", tools.join(",")];
   if (allowed.length) args.push("--allowedTools", allowed.join(","));
+  if (readOnly) args.push("--add-dir", ...opts.readDirs!);
   if (opts.effort) args.push("--effort", opts.effort);
   return args;
 }
 
-// Auto mode (with Tools): Claude Code's classifier runs what it judges safe
-// and in line with the request (including commands the user explicitly asks
-// for) without asking; the rest needs approval as before. It adds no time to
-// an answer that runs no command (measured 2026-10-15).
-const PERMISSION_ARGS = ["--permission-mode", "auto"];
+// Auto mode (with Tools, opt-in preference): Claude Code's classifier runs
+// what it judges safe and in line with the request (including commands the
+// user explicitly asks for) without asking; the rest needs approval as before.
+// It adds no time to an answer that runs no command (measured 2026-10-15).
+// Off by default: then every command that changes something asks first.
+function permissionArgs(): string[] {
+  return getPreferenceValues<Preferences>().claudeAutoMode
+    ? ["--permission-mode", "auto"]
+    : [];
+}
 
 // The prompt goes in as a JSON message rather than plain text: a process
 // started before the question is known can then wait for it (plain-text -p
@@ -200,7 +209,7 @@ function claudeArgs(opts: ClaudeOptions): string[] {
     // logins.
     ...toolArgs(opts),
     ...INPUT_ARGS,
-    ...(opts.tools ? [...PERMISSION_ARGS, ...HOST_PROMPT_ARGS] : []),
+    ...(opts.tools ? [...permissionArgs(), ...HOST_PROMPT_ARGS] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "",

@@ -17,9 +17,9 @@ export const EFFORTS: { value: Effort; title: string }[] = [
 export interface RequestOptions {
   webSearch?: boolean;
   effort?: Effort;
-  // Read files and run shell commands: Claude Code in auto mode, which asks
-  // about some; Codex in its read-only sandbox, a command that changes
-  // something only after the user approves it.
+  // Read files and run shell commands: Claude Code asks mid-turn before one
+  // that changes something (or decides itself in auto mode, if turned on);
+  // Codex in its read-only sandbox, such a command only after approval.
   tools?: boolean;
   // Finder selection: the selected folders (or those of the selected files).
   // Codex runs in the first one; Claude gets the paths in the prompt.

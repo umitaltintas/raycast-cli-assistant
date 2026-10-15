@@ -444,7 +444,7 @@ function withoutCommands(c: Conversation, messageId: string): Conversation {
 }
 
 // Commands waiting mid-turn, as a punchlist: ↵ answers the first one. In
-// Chat a note typed before ⌘↵ tells Claude what to do instead.
+// Chat a note typed before ↵ tells Claude what to do instead.
 export function approvalsMarkdown(
   approvals: PermissionRequest[] | undefined,
   withNote = false,
@@ -455,7 +455,7 @@ export function approvalsMarkdown(
   const [next, ...rest] = approvals;
   const title = next.description ? `: ${next.description}` : "";
   return [
-    `\n\n---\n\n**Wants to run${title}** (↵ runs it, ${MOD_KEY}↵ doesn't${withNote ? `; to tell Claude what to do instead, type it, then ${MOD_KEY}↵` : ""})`,
+    `\n\n---\n\n**Wants to run${title}** (↵ runs it, ${MOD_KEY}↵ doesn't${withNote ? `; to tell Claude what to do instead, type it, then ↵` : ""})`,
     block(next),
     ...(rest.length ? [`_Then ${rest.length} more:_`, ...rest.map(block)] : []),
   ].join("\n\n");

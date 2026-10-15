@@ -63,7 +63,7 @@
       "name": "ask-files",
       "title": "Ask About Selected Files",
       "subtitle": "CLI Assistant",
-      "description": "Ask a question about the files or folders selected in Finder or File Explorer. The model has Tools: it can read them and run shell commands.",
+      "description": "Ask a question about the files or folders selected in Finder or File Explorer. The model can read them, nothing else; turn on Tools on the answer for shell commands.",
       "mode": "view",
       "arguments": [
         {
@@ -120,7 +120,7 @@
       "name": "explain",
       "title": "Explain",
       "subtitle": "CLI Assistant",
-      "description": "Explain the selected text or code, with web search.",
+      "description": "Explain the selected text or code.",
       "mode": "view"
     }
   ],
@@ -387,8 +387,17 @@
     {
       "name": "chatTools",
       "title": "Tools",
-      "label": "Let Ask AI, Ask About Selection and Chat read files and run shell commands",
-      "description": "Default for Ask AI, Ask About Selection and new chats; toggle it in a chat or on an answer with ⌘⇧T (Ctrl+Shift+T on Windows). Claude Code runs the commands its auto mode check allows and asks you about some; ones it refuses are listed after the answer, never run by the extension. Codex shows a command that changes something and runs it only after you approve it.",
+      "label": "Let Ask AI and Chat read files and run shell commands you approve",
+      "description": "Default for Ask AI and new chats; toggle it in a chat or on an answer with ⌘⇧T (Ctrl+Shift+T on Windows). Files are read without asking. A shell command that changes something waits for your approval; Claude Code then runs it and goes on. Codex shows it after the answer and runs it once you approve.",
+      "type": "checkbox",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "claudeAutoMode",
+      "title": "",
+      "label": "Claude Code auto mode: run commands it judges safe without asking",
+      "description": "With Tools, Claude Code's own check runs commands that fit your request (including ones that change files) without asking; it still asks about the rest. Off: every command that changes something asks first.",
       "type": "checkbox",
       "required": false,
       "default": false

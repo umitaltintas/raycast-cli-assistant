@@ -146,7 +146,8 @@ const TRIM_ARGS = [
 function optionArgs(opts: RunOptions): string[] {
   return [
     `web_search=${opts.webSearch ? '"live"' : '"disabled"'}`,
-    ...(opts.tools
+    // A Finder selection needs the shell to read, in the read-only sandbox.
+    ...(opts.tools || opts.readDirs?.length
       ? []
       : [
           "features.shell_tool=false",

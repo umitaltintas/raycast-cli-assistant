@@ -150,18 +150,26 @@ export function ApprovalActions(props: {
 }) {
   const { approval } = props;
   const note = props.note?.trim();
+  const run = (
+    <Action
+      key="run"
+      title="Run Command"
+      icon={Icon.Terminal}
+      onAction={() => props.onAllow(approval.id)}
+    />
+  );
+  const deny = (
+    <Action
+      key="deny"
+      title={note ? "Don't Run, Tell Claude" : "Don't Run"}
+      icon={note ? Icon.Bubble : Icon.XMarkCircle}
+      onAction={() => props.onDeny(approval.id, note)}
+    />
+  );
+  // With a note typed, ↵ sends it instead of running the command.
   return (
     <ActionPanel.Section>
-      <Action
-        title="Run Command"
-        icon={Icon.Terminal}
-        onAction={() => props.onAllow(approval.id)}
-      />
-      <Action
-        title={note ? "Don't Run, Tell Claude" : "Don't Run"}
-        icon={note ? Icon.Bubble : Icon.XMarkCircle}
-        onAction={() => props.onDeny(approval.id, note)}
-      />
+      {note ? [deny, run] : [run, deny]}
     </ActionPanel.Section>
   );
 }
